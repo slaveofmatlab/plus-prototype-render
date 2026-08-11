@@ -1,0 +1,4282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新增销售报价申请</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      /* 对齐 dms.md / dms-detail 语义 Token */
+      --color-brand-primary: #1B766C;
+      --color-brand-primary-hover: #5A9391;
+      --color-brand-primary-active: #004E46;
+      --color-brand-primary-subtle: #E3F7F6;
+      --color-text-primary: #333333;
+      --color-text-secondary: #666666;
+      --color-text-placeholder: #999999;
+      --color-border-default: #E6E6E6;
+      --color-border-divider: #EEEEEE;
+      --color-border-focus: #1B766C;
+      --color-bg-canvas: #F0F1F2;
+      --color-bg-surface: #FAFAFA;
+      --color-bg-elevated: #FFFFFF;
+      --color-bg-hover: #F5F5F5;
+      --color-status-info: #0076FF;
+      --color-status-info-subtle: #EFF9FF;
+      --shadow-elevation-card: 0 1px 4px rgba(0, 0, 0, 0.04);
+      --shadow-elevation-modal: 0 4px 16px rgba(0, 0, 0, 0.12);
+      --shadow-focus-ring: 0 0 0 2px rgba(27, 118, 108, 0.1);
+      --radius-sm: 4px;
+      --dms-primary: var(--color-brand-primary);
+      --dms-primary-hover: var(--color-brand-primary-hover);
+      --dms-primary-active: var(--color-brand-primary-active);
+      --dms-primary-bg: var(--color-brand-primary-subtle);
+      --dms-text-title: var(--color-text-primary);
+      --dms-text: var(--color-text-secondary);
+      --dms-text-muted: var(--color-text-placeholder);
+      --dms-border: var(--color-border-default);
+      --dms-table-border: var(--color-border-divider);
+      --dms-page-bg: var(--color-bg-canvas);
+      --dms-surface: var(--color-bg-surface);
+      --dms-card-bg: var(--color-bg-elevated);
+      --dms-radius: var(--radius-sm);
+      --dms-shadow: var(--shadow-elevation-card);
+      --dms-font: 'PingFang SC', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+    }
+    body {
+      margin: 0;
+      min-width: 1126px;
+      background: var(--color-bg-canvas);
+      color: var(--color-text-primary);
+      font-family: var(--dms-font);
+      font-size: 14px;
+    }
+    .content-viewport { padding: 16px; padding-bottom: 72px; }
+
+    /* 信息提示（对齐 Message/Alert 信息态） */
+    .callout {
+      border-radius: var(--radius-sm);
+      padding: 10px 14px 10px 12px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--color-text-secondary);
+    }
+    .callout--info {
+      background: var(--color-status-info-subtle);
+      border: 1px solid #B3DAFF;
+      border-left: 3px solid var(--color-status-info);
+    }
+    .callout--info strong { color: var(--color-text-primary); font-weight: 600; }
+    .callout code {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11px;
+      padding: 1px 4px;
+      background: rgba(255,255,255,0.8);
+      border-radius: 2px;
+      border: 1px solid rgba(0, 118, 255, 0.2);
+    }
+
+    /* product_match 集成：特殊客户预处理提示条 */
+    .special-customer-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      margin: 12px 0 0;
+      background: var(--color-brand-primary-subtle);
+      border: 1px solid rgba(27, 118, 108, 0.18);
+      border-radius: var(--radius-sm);
+      color: var(--color-brand-primary-active);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .special-customer-banner svg { flex-shrink: 0; }
+
+    /* product_match 集成：第一步上传客户报价/定价/询价单 */
+    .quote-upload-wrap { margin-top: 12px; }
+    .quote-upload-label {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .quote-upload-area {
+      border: 1px dashed var(--color-border-default);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg-elevated);
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .quote-upload-area:hover, .quote-upload-area.dragover {
+      border-color: var(--color-brand-primary);
+      background: var(--color-brand-primary-subtle);
+    }
+    .quote-upload-area svg {
+      color: var(--color-brand-primary);
+      margin-bottom: 6px;
+    }
+    .quote-upload-title {
+      font-size: 13px;
+      color: var(--color-text-primary);
+      font-weight: 500;
+    }
+    .quote-upload-hint {
+      font-size: 12px;
+      color: var(--color-text-placeholder);
+      margin-top: 4px;
+    }
+    .quote-upload-file {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .quote-upload-file button {
+      background: transparent;
+      border: none;
+      color: var(--color-status-info);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0;
+    }
+    .quote-upload-loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: var(--radius-sm);
+      z-index: 2;
+    }
+    .quote-upload-area.uploading {
+      pointer-events: none;
+      border-color: var(--color-brand-primary);
+      background: var(--color-brand-primary-subtle);
+    }
+    .quote-upload-area.uploading .quote-upload-loading {
+      display: flex;
+    }
+    .quote-upload-spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(27, 118, 108, 0.15);
+      border-top-color: var(--color-brand-primary);
+      border-radius: 50%;
+      animation: quote-upload-spin 0.8s linear infinite;
+    }
+    @keyframes quote-upload-spin {
+      to { transform: rotate(360deg); }
+    }
+    .quote-upload-loading-text {
+      font-size: 13px;
+      color: var(--color-text-primary);
+      font-weight: 500;
+    }
+    .quote-upload-loading-sub {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+    }
+
+    .page-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .page-title-bar h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+    .page-title-bar .sub {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      font-weight: 400;
+    }
+
+    /* 步骤条（Steps：完成态显示 ✓） */
+    .steps-wrap {
+      background: var(--color-bg-elevated);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-elevation-card);
+      padding: 20px 32px 18px;
+      margin-bottom: 8px;
+      border: 1px solid var(--color-border-default);
+    }
+    .steps-bar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .step-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      min-width: 0;
+    }
+    .step-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 16px;
+      left: calc(50% + 20px);
+      right: calc(-50% + 20px);
+      height: 2px;
+      background: var(--color-border-default);
+      z-index: 0;
+      border-radius: 1px;
+    }
+    .step-item.done:not(:last-child)::after { background: var(--color-brand-primary); }
+    .step-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--color-border-default);
+      background: var(--color-bg-elevated);
+      color: var(--color-text-placeholder);
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+      transition: border-color 0.2s, background 0.2s, color 0.2s;
+    }
+    .step-num { line-height: 1; }
+    .step-item.active .step-circle {
+      border-color: var(--color-brand-primary);
+      background: var(--color-brand-primary);
+      color: #fff;
+      box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+    }
+    .step-item.done .step-circle {
+      border-color: var(--color-brand-primary);
+      background: var(--color-brand-primary-subtle);
+      color: var(--color-brand-primary);
+    }
+    .step-item.done .step-num { display: none; }
+    .step-item.done .step-circle::after {
+      content: '✓';
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .step-label {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--color-text-placeholder);
+      text-align: center;
+      line-height: 1.4;
+      padding: 0 6px;
+    }
+    .step-item.active .step-label { color: var(--color-brand-primary); font-weight: 650; }
+    .step-item.done .step-label { color: var(--color-text-primary); font-weight: 500; }
+
+    .content-block {
+      background: var(--color-bg-surface);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-elevation-card);
+      padding: 16px 20px;
+      margin-bottom: 8px;
+      border: 1px solid rgba(230, 230, 230, 0.6);
+    }
+    .block-hd {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-border-divider);
+    }
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    .form-row { display: flex; flex-wrap: wrap; gap: 16px; }
+    .form-field {
+      flex: 0 0 calc((100% - 48px) / 4);
+      min-width: 200px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .form-field.full { flex: 1 1 100%; align-items: flex-start; }
+    .form-label {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+      min-width: 100px;
+      text-align: right;
+      line-height: 32px;
+      flex-shrink: 0;
+    }
+    .form-label.req::before {
+      content: '*';
+      color: #FF2E2E;
+      margin-right: 4px;
+    }
+    .form-select, .form-input {
+      flex: 1;
+      min-width: 0;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg-elevated);
+      font-size: 12px;
+      color: var(--color-text-primary);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-select:hover:not(:disabled), .form-input:hover:not(:disabled) {
+      border-color: #999999;
+    }
+    .form-select:focus, .form-input:focus {
+      outline: none;
+      border-color: var(--color-border-focus);
+      box-shadow: var(--shadow-focus-ring);
+    }
+    .form-select:disabled, .form-input:disabled {
+      background: var(--color-bg-surface);
+      color: var(--color-text-secondary);
+      cursor: not-allowed;
+      border-color: var(--color-border-default);
+    }
+    .muted { font-size: 12px; color: var(--color-text-placeholder); line-height: 1.5; }
+
+    .cat-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 20px;
+      flex: 1;
+      padding-top: 12px;
+    }
+    .cat-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--color-text-primary);
+      cursor: pointer;
+      user-select: none;
+    }
+    /* 复选框 16×16，主色（dms 9.4） */
+    .cat-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--color-brand-primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* 矩阵第三列：参考信息（紧随模式列，按行展示） */
+    .matrix-ref-cell {
+      vertical-align: top;
+      min-width: 260px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+    .matrix-ref-inner {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: 420px;
+    }
+    .matrix-ref-inner .form-label {
+      min-width: 72px;
+      margin-bottom: 0;
+      line-height: 32px;
+    }
+    .matrix-ref-inner .form-select {
+      flex: 1;
+      min-width: 180px;
+      max-width: 320px;
+    }
+
+    /* 采购基准价模式：单选按钮组（外观为按钮，互斥单选） */
+    .radio-chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+      align-items: flex-start;
+      padding-top: 8px;
+    }
+    .radio-chip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+      padding: 0 14px;
+      font-size: 12px;
+      line-height: 1.3;
+      color: var(--color-text-primary);
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s;
+    }
+    .radio-chip input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+      margin: 0;
+      flex-shrink: 0;
+    }
+    .radio-chip:hover {
+      border-color: var(--color-brand-primary-hover);
+      color: var(--color-brand-primary);
+    }
+    .radio-chip:focus-within {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: 2px;
+    }
+    .radio-chip:has(input:checked) {
+      border-color: var(--color-brand-primary);
+      background: var(--color-brand-primary-subtle);
+      color: var(--color-brand-primary);
+      font-weight: 600;
+      box-shadow: 0 0 0 1px var(--color-brand-primary);
+    }
+
+    .table-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    .btn {
+      height: 32px;
+      padding: 0 16px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 400;
+      border: 1px solid var(--color-border-default);
+      background: var(--color-bg-elevated);
+      color: var(--color-text-primary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.2s;
+      box-sizing: border-box;
+    }
+    .btn:hover:not(:disabled) {
+      border-color: var(--color-brand-primary-hover);
+      color: var(--color-brand-primary);
+    }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    .btn:focus-visible {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: 2px;
+    }
+    .btn-primary {
+      border-color: var(--color-brand-primary);
+      background: var(--color-brand-primary);
+      color: #fff;
+      box-shadow: 0 2px 0 rgba(0,0,0,0.045);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--color-brand-primary-hover);
+      border-color: var(--color-brand-primary-hover);
+      color: #fff;
+    }
+    .btn-primary:active:not(:disabled) {
+      background: var(--color-brand-primary-active);
+      border-color: var(--color-brand-primary-active);
+    }
+    .btn-primary .btn-ico { color: inherit; opacity: 0.95; }
+    .btn-ghost { border-color: transparent; background: transparent; color: var(--color-text-secondary); }
+    .btn-ghost:hover { background: var(--color-bg-hover); color: var(--color-brand-primary); }
+    .btn-ico { font-size: 14px; line-height: 1; }
+
+    .table-container {
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+      overflow: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .data-table th, .data-table td {
+      border-bottom: 1px solid var(--color-border-divider);
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .data-table th {
+      background: #F5F5F5;
+      color: var(--color-text-secondary);
+      font-weight: 600;
+    }
+    .data-table tbody tr:hover { background: var(--color-bg-hover); }
+    .data-table td.td-detail-input {
+      white-space: normal;
+      vertical-align: middle;
+      min-width: 88px;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+    /* 行项目编辑控件：对齐 dms-detail 6.2.3/6.2.4 标准输入样式 */
+    .detail-cell-input {
+      width: 100%;
+      min-width: 80px;
+      height: 32px;
+      padding: 0 12px;
+      font-size: 12px;
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+      text-align: right;
+      box-sizing: border-box;
+      background: var(--color-bg-elevated);
+      color: var(--color-text-primary);
+      transition: all 0.2s;
+    }
+    .detail-cell-input:hover {
+      border-color: #999999;
+    }
+    .detail-cell-input:focus {
+      outline: none;
+      border-color: var(--color-border-focus);
+      box-shadow: var(--shadow-focus-ring);
+    }
+    .detail-cell-input::placeholder { color: var(--color-text-placeholder); }
+    .detail-cell-input:disabled {
+      background: var(--color-bg-surface);
+      color: var(--color-text-secondary);
+      border-color: var(--color-border-default);
+      cursor: not-allowed;
+    }
+    .detail-cell-input.detail-text-left {
+      text-align: left;
+      max-width: 220px;
+      min-width: 120px;
+    }
+    .data-table td.td-detail-name { min-width: 128px; }
+    .detail-purchase-mode-readonly {
+      font-size: 12px;
+      color: var(--color-text-primary);
+      white-space: nowrap;
+    }
+    .detail-purchase-mode-select {
+      width: 100%;
+      min-width: 160px;
+      max-width: 220px;
+      height: 32px;
+      padding: 0 12px;
+      font-size: 12px;
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+      box-sizing: border-box;
+      background: var(--color-bg-elevated);
+      color: var(--color-text-primary);
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .detail-purchase-mode-select:hover { border-color: #999999; }
+    .detail-purchase-mode-select:focus {
+      outline: none;
+      border-color: var(--color-border-focus);
+      box-shadow: var(--shadow-focus-ring);
+    }
+    .detail-purchase-mode-select:disabled {
+      background: var(--color-bg-surface);
+      color: var(--color-text-secondary);
+      border-color: var(--color-border-default);
+      cursor: not-allowed;
+    }
+    .trend-up { color: #F5222D; font-weight: 600; }
+    .trend-down { color: #52C41A; font-weight: 600; }
+    .trend-flat { color: var(--color-text-secondary); }
+    .margin-warn-low {
+      color: #F5222D;
+      background: rgba(245, 34, 45, 0.08);
+      border: 1px solid rgba(245, 34, 45, 0.25);
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+    }
+    .margin-warn-high {
+      color: #D48806;
+      background: rgba(250, 173, 20, 0.12);
+      border: 1px solid rgba(250, 173, 20, 0.35);
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+    }
+
+    .form-actions {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(4px);
+      border-top: 1px solid var(--color-border-default);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      z-index: 50;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--color-bg-elevated);
+      border-radius: var(--radius-sm);
+      width: 640px;
+      max-width: 100%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-elevation-modal);
+      border: 1px solid var(--color-border-default);
+    }
+    /* 选择产品：宽度 +50%（640→960），略增高可视区（列表页弹窗与 dms-list §12、§16） */
+    #pickerModal .modal.modal--picker {
+      width: 960px;
+      max-width: min(960px, calc(100vw - 32px));
+      max-height: 88vh;
+    }
+    /* dms-list §12.1 筛选卡片 */
+    .picker-filter-card {
+      background: var(--color-bg-elevated);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      padding: 16px;
+      flex-shrink: 0;
+      border: 1px solid var(--color-border-default);
+    }
+    /* dms-list §12.2：四列栅格 + 末列操作按钮 */
+    .picker-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px 20px;
+      align-items: center;
+    }
+    /* dms-list §12.3 / §12.4 */
+    .picker-filter-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .picker-filter-item .picker-filter-label {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      min-width: 72px;
+      text-align: right;
+      white-space: nowrap;
+      flex-shrink: 0;
+      line-height: 32px;
+    }
+    .picker-filter-item .form-select,
+    .picker-filter-item .form-input {
+      flex: 1;
+      min-width: 0;
+    }
+    .picker-filter-item .form-input::placeholder {
+      color: #999999;
+    }
+    .picker-filter-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      grid-column: 4;
+    }
+    /* 列表区：卡片 + 工具栏 + 表格滚动（dms-list §15 / §16） */
+    .picker-list-card {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .picker-table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--color-border-divider);
+      background: var(--color-bg-elevated);
+      flex-shrink: 0;
+    }
+    .picker-table-toolbar .picker-table-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+    .picker-table-scroll {
+      overflow: auto;
+      max-height: min(520px, calc(88vh - 300px));
+      flex: 1;
+      min-height: 200px;
+    }
+    .picker-table-scroll .table-container {
+      border: none;
+      border-radius: 0;
+    }
+    .picker-product-table {
+      font-size: 12px;
+    }
+    .picker-product-table th,
+    .picker-product-table td {
+      padding: 6px 8px;
+      height: 32px;
+      box-sizing: border-box;
+      vertical-align: middle;
+    }
+    .picker-product-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #f5f5f5;
+      box-shadow: 0 1px 0 var(--color-border-divider);
+    }
+    .picker-product-table tbody tr:hover {
+      background: var(--color-bg-hover);
+    }
+    .modal-hd {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--color-border-divider);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      background: var(--color-bg-surface);
+    }
+    .modal-bd { padding: 16px 20px; overflow: auto; flex: 1; min-height: 0; }
+    .modal-ft {
+      padding: 12px 20px;
+      border-top: 1px solid var(--color-border-divider);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-shrink: 0;
+      background: var(--color-bg-surface);
+    }
+    /* UI 标准库命名别名：与本页 modal-hd/bd/ft 等价，避免不同原型间样式不一致 */
+    .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--color-border-divider); font-size: 16px; font-weight: 600; color: var(--color-text-primary); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; background: var(--color-bg-surface); }
+    #pickerModal .modal-header { align-items: flex-start; gap: 12px; }
+    #pickerModal .modal-header > div:first-child { min-width: 0; flex: 1; }
+    .modal-body { padding: 16px 20px; overflow: auto; flex: 1; min-height: 0; }
+    .modal-body.modal-body--picker {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 16px;
+      min-height: 0;
+    }
+    .modal-footer { padding: 12px 20px; border-top: 1px solid var(--color-border-divider); display: flex; justify-content: flex-end; gap: 12px; flex-shrink: 0; background: var(--color-bg-surface); }
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-placeholder);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: -4px -8px -4px 8px;
+    }
+    .modal-close:hover { background: rgba(0,0,0,0.06); color: var(--color-text-primary); }
+    .modal-close:focus-visible { outline: 2px solid var(--color-brand-primary); outline-offset: 2px; }
+    .modal-title { font-size: 16px; font-weight: 600; color: var(--color-text-primary); }
+    .modal-sub { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
+    .product-pick-list { max-height: 320px; overflow: auto; }
+    .product-pick-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 6px;
+      border-bottom: 1px solid var(--color-border-divider);
+      font-size: 12px;
+    }
+    .product-pick-row:last-child { border-bottom: none; }
+    .product-pick-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--color-brand-primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .data-table input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--color-brand-primary);
+      cursor: pointer;
+    }
+    .data-table td.cell-wrap {
+      white-space: normal;
+      vertical-align: top;
+      max-width: 320px;
+    }
+    .import-match-sim-col { font-size: 12px; line-height: 1.45; }
+    .import-match-preview { padding: 2px 0; }
+    .import-match-preview-title {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 6px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+    .import-match-preview-product {
+      min-width: 0;
+      flex: 1 1 auto;
+      font-weight: 600;
+    }
+    .import-match-action-row {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    /* 综合相似度：警示提醒样式（对齐 DMS 警示色） */
+    .import-match-overall-pct {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      white-space: nowrap;
+      width: 5.5rem;
+      min-width: 5.5rem;
+      max-width: 5.5rem;
+      box-sizing: border-box;
+      font-weight: 700;
+      font-size: 12px;
+      line-height: 1.35;
+      color: #D48806;
+      background: #FFF7E6;
+      border: 1px solid #FFD591;
+      border-radius: var(--radius-sm);
+      padding: 3px 6px;
+    }
+    /* 三维分解：正文次要色（dms-list 表头/辅助说明） */
+    .import-match-preview-dim {
+      font-size: 11px;
+      margin-top: 4px;
+      line-height: 1.45;
+      color: var(--color-text-secondary);
+      font-weight: 400;
+    }
+    .import-match-adjust-btn {
+      padding: 0;
+      border: none;
+      background: none;
+      color: var(--color-brand-primary);
+      cursor: pointer;
+      font-size: 12px;
+      text-decoration: underline;
+      margin-left: auto;
+      flex: 0 0 auto;
+    }
+    .import-match-adjust-btn:hover { color: var(--color-brand-primary-hover); }
+    .import-match-radio-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--color-border-divider);
+      cursor: pointer;
+    }
+    .import-match-radio-row:last-child { border-bottom: none; }
+    .import-match-radio-row input[type="radio"] {
+      width: 16px;
+      height: 16px;
+      margin-top: 2px;
+      accent-color: var(--color-brand-primary);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .import-match-radio-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 6px;
+      color: var(--color-text-primary);
+      font-weight: 500;
+    }
+    .import-match-radio-meta-main {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .import-match-radio-dim {
+      display: block;
+      color: var(--color-text-secondary);
+      font-size: 11px;
+      margin-top: 2px;
+      font-weight: 400;
+      line-height: 1.45;
+    }
+    .hidden-file { display: none; }
+
+    /* 折叠面板（对齐详情页区块折叠交互） */
+    .fold-block {
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .fold-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      user-select: none;
+      background: var(--color-bg-surface);
+      border-bottom: 1px solid transparent;
+      transition: background 0.2s;
+    }
+    .fold-head:hover { background: var(--color-bg-hover); }
+    .fold-block:not(.collapsed) .fold-head {
+      border-bottom-color: var(--color-border-divider);
+      box-shadow: inset 3px 0 0 var(--color-brand-primary);
+    }
+    .fold-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      font-size: 10px;
+      color: var(--color-text-placeholder);
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .fold-block:not(.collapsed) .fold-icon { transform: rotate(90deg); }
+    .fold-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      flex-shrink: 0;
+    }
+    .fold-summary {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      flex: 1;
+      min-width: 200px;
+      line-height: 1.45;
+    }
+    .fold-body {
+      padding: 14px 16px 16px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(240px, 1fr));
+      gap: 10px 28px;
+      font-size: 12px;
+      background: var(--color-bg-elevated);
+    }
+    .fold-block.collapsed .fold-body { display: none; }
+    .fold-kv { display: flex; gap: 8px; align-items: baseline; }
+    .fold-kv .k {
+      color: var(--color-text-secondary);
+      min-width: 88px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .fold-kv .v { color: var(--color-text-primary); word-break: break-all; }
+
+    /* 子区块标题 */
+    .sub-block-hd {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin: 20px 0 12px;
+      padding: 0 0 0 10px;
+      border-left: 3px solid var(--color-brand-primary);
+      line-height: 1.2;
+    }
+    .sub-block-hd:first-of-type { margin-top: 0; }
+
+    /* 品类 × 采购基准价模式 矩阵（1 品类 : N 模式，对齐详情页表格/区块规范） */
+    .matrix-table-wrap {
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+    .matrix-table-wrap .table-container { border-radius: var(--radius-sm); }
+    .matrix-table .matrix-cat-cell {
+      vertical-align: top;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      white-space: nowrap;
+      width: 140px;
+    }
+    .matrix-table .matrix-scope-cell {
+      vertical-align: middle;
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      line-height: 1.45;
+      min-width: 200px;
+      background: #fafafa;
+    }
+    .matrix-table .matrix-mode-cell {
+      vertical-align: top;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+    .matrix-table .matrix-margin-cell {
+      vertical-align: middle;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-text-secondary);
+      white-space: nowrap;
+      min-width: 88px;
+    }
+    .mode-chip-group {
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    /* 多选模式 chip：同单选 chip 视觉，允许多个同时选中 */
+    .mode-checkbox-chip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+      padding: 0 12px;
+      font-size: 12px;
+      line-height: 1.3;
+      color: var(--color-text-primary);
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s;
+    }
+    .mode-checkbox-chip input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+      margin: 0;
+    }
+    .mode-checkbox-chip:hover {
+      border-color: var(--color-brand-primary-hover);
+      color: var(--color-brand-primary);
+    }
+    .mode-checkbox-chip:focus-within {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: 2px;
+    }
+    .mode-checkbox-chip:has(input:checked) {
+      border-color: var(--color-brand-primary);
+      background: var(--color-brand-primary-subtle);
+      color: var(--color-brand-primary);
+      font-weight: 600;
+      box-shadow: 0 0 0 1px var(--color-brand-primary);
+    }
+
+    .margin-summary-block {
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+    }
+    .margin-summary-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: 10px;
+    }
+    .margin-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px 16px;
+    }
+    @media (max-width: 1280px) {
+      .margin-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .margin-summary-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+    }
+    .margin-summary-item .ms-label { color: var(--color-text-placeholder); }
+    .margin-summary-item .ms-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-brand-primary-active);
+    }
+
+    .field-new .form-input,
+    .customer-multi-box,
+    .field-new .project-multi-box {
+      border-color: #B8D9D4;
+      background: #F6FBFA;
+    }
+    .project-multi-wrap {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+    }
+    .project-multi-box {
+      width: 100%;
+      height: 32px;
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+      padding: 0 28px 0 8px;
+      background: #fff;
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .project-multi-wrap.is-dropdown-open {
+      z-index: 30;
+    }
+    .project-multi-wrap.is-dropdown-open .project-multi-box {
+      border-color: var(--color-brand-primary);
+      box-shadow: var(--shadow-focus-ring);
+    }
+    .project-multi-tags {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+    }
+    .project-multi-tags::-webkit-scrollbar { display: none; }
+    .project-multi-box::after {
+      content: '';
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      width: 7px;
+      height: 7px;
+      border-right: 1px solid #C0C4CC;
+      border-bottom: 1px solid #C0C4CC;
+      transform: translateY(-65%) rotate(45deg);
+      pointer-events: none;
+    }
+    .project-multi-box:focus,
+    .project-multi-box:focus-within {
+      border-color: var(--color-brand-primary);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(27, 118, 108, 0.1);
+    }
+    .project-multi-input {
+      flex: 1;
+      min-width: 72px;
+      height: 26px;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--color-text-title);
+      font-size: 12px;
+      font-family: inherit;
+      line-height: 26px;
+    }
+    .project-multi-input::placeholder { color: var(--color-text-placeholder); }
+    .project-multi-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 100%;
+      flex-shrink: 0;
+      padding: 2px 8px;
+      background: var(--color-brand-primary-subtle);
+      color: var(--color-brand-primary-active);
+      border-radius: 2px;
+      font-size: 12px;
+      line-height: 18px;
+    }
+    .project-multi-tag-text {
+      display: inline-block;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: bottom;
+    }
+    .project-multi-tag button {
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: inherit;
+      font-size: 12px;
+      line-height: 1;
+      padding: 0;
+    }
+    .project-multi-placeholder { color: var(--color-text-placeholder); font-size: 12px; }
+    .project-multi-dropdown {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(32px + 4px);
+      z-index: 20;
+      background: #fff;
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-elevation-card);
+      max-height: 220px;
+      overflow: auto;
+      padding: 4px 0;
+    }
+    .project-multi-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .project-multi-option:hover { background: var(--color-brand-primary-subtle); }
+    .project-multi-option.is-selected { background: var(--color-brand-primary-subtle); font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="content-viewport">
+    <div class="page-title-bar">
+      <h1>新增销售报价申请</h1>
+    </div>
+
+    <div class="steps-wrap" aria-label="新建步骤">
+      <div class="steps-bar" id="stepsBar">
+        <div class="step-item active" data-step="1">
+          <div class="step-circle"><span class="step-num">1</span></div>
+          <div class="step-label">基础信息<br/>运营公司与报价时间</div>
+        </div>
+        <div class="step-item" data-step="2">
+          <div class="step-circle"><span class="step-num">2</span></div>
+          <div class="step-label">品类与基准价<br/>产品来源与报价明细</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第一步 -->
+    <div class="content-block step-panel active" id="panel1">
+      <div class="block-hd">第一步：基础信息</div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label req" for="opCompany">运营公司</label>
+          <select class="form-select" id="opCompany">
+            <option value="">请选择</option>
+            <option>丰厨(上海)供应链管理有限公司</option>
+            <option>丰厨(北京)供应链管理有限公司</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label req" for="dealerCompany">经销商公司</label>
+          <select class="form-select" id="dealerCompany" disabled aria-readonly="true" title="随运营公司自动带出，不可修改">
+            <option value="">请先选择运营公司</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label req" for="quoteType">报价类型</label>
+          <select class="form-select" id="quoteType">
+            <option value="">请选择</option>
+            <option>常规报价</option>
+            <option>临采报价</option>
+            <option>临客询价</option>
+          </select>
+        </div>
+        <div class="form-field field-new">
+          <label class="form-label req" id="customerChannelLabel" for="customerChannel">客户渠道</label>
+          <select class="form-select" id="customerChannel" title="请先选择客户渠道，再选择客户类型、客户名称与项目点">
+            <option value="">请选择</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label req" for="customerType">客户类型</label>
+          <select class="form-select" id="customerType" title="请先选择客户渠道，再选择客户类型">
+            <option value="">请选择</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label req" id="customerLabelEl" for="customerSelect">客户名称</label>
+          <div class="project-multi-wrap" id="customerMultiWrap">
+            <div class="project-multi-box customer-multi-box" id="customerMultiBox" tabindex="0" title="非临客询价：请先选择客户渠道、客户类型，再多选客户">
+              <div class="project-multi-tags" id="customerTags"></div>
+              <input class="project-multi-input" id="customerSearchInput" type="text" placeholder="请选择（可多选）" autocomplete="off" />
+              <span class="project-multi-placeholder" id="customerPlaceholder" style="display:none;">请选择（可多选）</span>
+            </div>
+            <div class="project-multi-dropdown" id="customerDropdown" style="display:none;"></div>
+            <select class="form-select" id="customerSelect" style="display:none;" multiple aria-hidden="true"></select>
+          </div>
+          <input class="form-input" id="customerName" placeholder="临客询价时手动输入客户名称" style="display:none;" />
+        </div>
+        <div class="form-field field-new" id="projectSiteFieldWrap">
+          <label class="form-label" id="projectSiteLabelEl">项目点名称（选填）</label>
+          <div class="project-multi-wrap" id="projectSiteMultiWrap">
+            <div class="project-multi-box" id="projectSiteMultiBox" tabindex="0" title="非临客询价：多选，仅已选客户下项目点">
+              <div class="project-multi-tags" id="projectSiteTags"></div>
+              <input class="project-multi-input" id="projectSiteSearchInput" type="text" placeholder="请选择（可多选）" autocomplete="off" />
+              <span class="project-multi-placeholder" id="projectSitePlaceholder" style="display:none;">请选择（可多选）</span>
+            </div>
+            <div class="project-multi-dropdown" id="projectSiteDropdown" style="display:none;"></div>
+            <select class="form-select" id="projectSiteSelect" style="display:none;" multiple aria-hidden="true"></select>
+            <input class="form-input" id="projectSiteName" placeholder="临客询价时手动输入项目点" style="display:none;" />
+          </div>
+        </div>
+        <div class="form-field field-new">
+          <label class="form-label req" for="quoteTitle">报价标题</label>
+          <input class="form-input" id="quoteTitle" type="text" placeholder="默认：客户名称+开始+结束+销售报价" maxlength="200" />
+        </div>
+        <div class="form-field">
+          <label class="form-label req" for="quoteStart">报价开始日期</label>
+          <input class="form-input" id="quoteStart" type="date" />
+        </div>
+        <div class="form-field">
+          <label class="form-label req" for="quoteEnd">报价结束日期</label>
+          <input class="form-input" id="quoteEnd" type="date" />
+        </div>
+      </div>
+
+      <!-- product_match 集成：第一步上传客户报价/定价/询价单 -->
+      <div class="quote-upload-wrap" id="quoteUploadWrap">
+        <span class="quote-upload-label">客户报价/定价/询价单</span>
+        <div class="quote-upload-area" id="quoteUploadArea" onclick="document.getElementById('importFile').click()"
+             ondragover="event.preventDefault();this.classList.add('dragover')"
+             ondragleave="this.classList.remove('dragover')"
+             ondrop="event.preventDefault();this.classList.remove('dragover');var f=event.dataTransfer.files;if(f.length){document.getElementById('importFile').files=f;onImportFile(document.getElementById('importFile'));}">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div class="quote-upload-title">点击或拖拽上传客户报价单、定价单、询价单</div>
+          <div class="quote-upload-hint">支持 .xlsx / .xls / .csv，上传后将自动识别客户类型并完成预处理与对品</div>
+          <div class="quote-upload-file" id="quoteUploadFile" style="display:none;">
+            <span id="quoteUploadFileName"></span>
+            <button type="button" onclick="event.stopPropagation();document.getElementById('importFile').value='';document.getElementById('quoteUploadFile').style.display='none';">移除</button>
+          </div>
+          <div class="quote-upload-loading" id="quoteUploadLoading">
+            <div class="quote-upload-spinner"></div>
+            <div class="quote-upload-loading-text" id="quoteUploadLoadingText">正在上传并识别客户报价单…</div>
+            <div class="quote-upload-loading-sub" id="quoteUploadLoadingSub">上传完成后将自动对品并勾选报价品类</div>
+          </div>
+        </div>
+        <input type="file" id="importFile" class="hidden-file" accept=".xlsx,.xls,.csv" onchange="onImportFile(this)" />
+      </div>
+
+      <!-- product_match 集成：特殊客户预处理提示 -->
+      <div id="specialCustomerBanner" class="special-customer-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>已启用<b id="specialCustomerName">—</b>特殊订单预处理：英文描述、类目前缀、储存类型与国家名将在匹配前自动清洗。</span>
+      </div>
+      </div>
+
+    <!-- 第二步：品类与明细等（顶部折叠展示第一步信息） -->
+    <div class="content-block step-panel" id="panel2">
+      <div class="fold-block collapsed" id="step1SummaryFold">
+        <div class="fold-head" id="step1FoldHead" role="button" tabindex="0" aria-expanded="false"
+          onclick="toggleStep1Fold()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleStep1Fold();}">
+          <span class="fold-icon" aria-hidden="true">▶</span>
+          <span class="fold-title">第一步：基础信息</span>
+          <span class="fold-summary" id="step1SummaryLine">—</span>
+        </div>
+        <div class="fold-body" id="step1SummaryBody" aria-hidden="true">
+          <div class="fold-kv"><span class="k">运营公司</span><span class="v" id="sumOp">—</span></div>
+          <div class="fold-kv"><span class="k">经销商公司</span><span class="v" id="sumDealer">—</span></div>
+          <div class="fold-kv"><span class="k">报价类型</span><span class="v" id="sumQuoteType">—</span></div>
+          <div class="fold-kv"><span class="k">客户名称</span><span class="v" id="sumCustomer">—</span></div>
+          <div class="fold-kv"><span class="k">报价标题</span><span class="v" id="sumQuoteTitle">—</span></div>
+          <div class="fold-kv"><span class="k">项目点</span><span class="v" id="sumProject">—</span></div>
+          <div class="fold-kv"><span class="k">客户渠道</span><span class="v" id="sumCustomerChannel">—</span></div>
+          <div class="fold-kv"><span class="k">客户类型</span><span class="v" id="sumCustType">—</span></div>
+          <div class="fold-kv"><span class="k">报价开始</span><span class="v" id="sumStart">—</span></div>
+          <div class="fold-kv"><span class="k">报价结束</span><span class="v" id="sumEnd">—</span></div>
+        </div>
+      </div>
+
+      <div class="block-hd">第二步：品类与基准价、产品明细</div>
+
+      <div class="sub-block-hd">报价品类</div>
+      <div class="form-row">
+        <div class="form-field full">
+          <label class="form-label req" style="align-self:flex-start;padding-top:4px;">报价品类（一级分类）</label>
+          <div class="cat-grid" id="categoryGrid"></div>
+        </div>
+      </div>
+      <div class="sub-block-hd">品类与采购基准价模式</div>
+      <div class="matrix-table-wrap">
+        <div class="table-container">
+          <table class="data-table matrix-table">
+            <thead>
+              <tr>
+                <th>报价品类（一级分类）</th>
+                <th style="min-width:200px;">应用范围（只读）</th>
+                <th>采购基准价模式（单选）</th>
+                <th style="text-align:center;">最低毛利率(%)</th>
+                <th style="text-align:center;">最高毛利率(%)</th>
+                <th>参考信息</th>
+              </tr>
+            </thead>
+            <tbody id="categoryModeTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sub-block-hd">产品来源与报价明细</div>
+      <div class="table-actions">
+        <button type="button" class="btn btn-primary" onclick="openProductPicker()"><span class="btn-ico" aria-hidden="true">+</span> 从产品库选择</button>
+        <button type="button" class="btn" onclick="loadRefCustomerProducts()"><span class="btn-ico" aria-hidden="true">⎘</span> 获取参考客户产品</button>
+        <button type="button" class="btn" onclick="onImportProductClick()"><span class="btn-ico" aria-hidden="true">↑</span> 导入产品</button>
+        <button type="button" class="btn" onclick="removeAllDetailRows()"><span class="btn-ico" aria-hidden="true">🗑</span> 删除</button>
+        <span class="muted" id="detailHint">请先在矩阵中为每个已选品类配置至少一种采购基准价模式；导入支持<strong>预估销量</strong>等列，写入明细「销量预估」；导入后「匹配相似度」列展示<strong>综合相似度最高</strong>的推荐，点击可弹窗调整候选。</span>
+      </div>
+      <div class="table-container">
+        <table class="data-table" style="min-width:2160px;">
+          <thead>
+            <tr>
+              <th style="text-align:center;width:44px;">
+                <input type="checkbox" id="detailSelectAll" title="全选/取消全选" onchange="toggleSelectAllDetailRows(this.checked)" />
+              </th>
+              <th style="text-align:center;width:48px;">序号</th>
+              <th>客户产品名称</th>
+              <th>品牌</th>
+              <th>规格</th>
+              <th>标准产品名称</th>
+              <th>标准产品代码</th>
+              <th style="text-align:center;min-width:72px;">是否益海</th>
+              <th>标准品牌</th>
+              <th>标准规格</th>
+              <th style="min-width:200px;">匹配相似度</th>
+              <th>一级分类</th>
+              <th style="min-width:96px;">单位</th>
+              <th style="min-width:110px;">协作模式</th>
+              <th style="min-width:130px;">采购基准价模式</th>
+              <th style="text-align:right;">市调价格</th>
+              <th style="text-align:right;">采购基准价</th>
+              <th>毛利区间</th>
+              <th>销售参考价区间</th>
+              <th style="text-align:right;">销量预估</th>
+              <th style="text-align:right;">采购加价幅度</th>
+              <th style="text-align:right;">上次销售价</th>
+              <th style="text-align:right;">采购确认价</th>
+              <th style="text-align:right;">销售确认价</th>
+              <th style="text-align:right;">确认销售毛利</th>
+              <th style="text-align:center;">价格趋势</th>
+            </tr>
+          </thead>
+          <tbody id="detailTbody"></tbody>
+        </table>
+      </div>
+      <div class="margin-summary-block field-new" id="marginSummaryBlock" aria-label="毛利汇总">
+        <div class="margin-summary-title">毛利汇总 <span class="muted" style="font-weight:400;font-size:12px;">(销售确认价−采购确认价)/销售确认价，按维度汇总</span></div>
+        <div class="margin-summary-grid">
+          <div class="margin-summary-item"><span class="ms-label">益海产品-供应商直送</span><span class="ms-value" id="marginSummaryYihaiDirect">—</span></div>
+          <div class="margin-summary-item"><span class="ms-label">益海产品-大仓配送</span><span class="ms-value" id="marginSummaryYihaiWarehouse">—</span></div>
+          <div class="margin-summary-item"><span class="ms-label">非益海产品-供应商直送</span><span class="ms-value" id="marginSummaryNonYihaiDirect">—</span></div>
+          <div class="margin-summary-item"><span class="ms-label">非益海产品-大仓配送</span><span class="ms-value" id="marginSummaryNonYihaiWarehouse">—</span></div>
+          <div class="margin-summary-item"><span class="ms-label">整单毛利</span><span class="ms-value" id="marginSummaryTotal">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="button" class="btn" onclick="goCancel()">取消</button>
+    <button type="button" class="btn" id="btnPrev" onclick="goPrev()" style="display:none;">上一步</button>
+    <button type="button" class="btn btn-primary" id="btnNext" onclick="goNext()">下一步</button>
+    <button type="button" class="btn btn-primary" id="btnFinish" onclick="goFinish()" style="display:none;">保存进入详情页</button>
+  </div>
+
+  <div class="modal-overlay" id="pickerModal" onclick="if(event.target===this) closeProductPicker()" role="dialog" aria-modal="true" aria-labelledby="pickerModalTitle">
+    <div class="modal modal--picker" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="pickerModalTitle">选择产品</div>
+          <div class="modal-sub">已按已选报价品类过滤产品库；支持关键字检索，勾选后确定添加至明细</div>
+        </div>
+        <button type="button" class="modal-close" onclick="closeProductPicker()" aria-label="关闭" title="关闭">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body modal-body--picker">
+        <div class="picker-filter-card">
+          <div class="picker-filter-grid">
+            <div class="picker-filter-item">
+              <label class="picker-filter-label" for="pickCat1Select">一级分类</label>
+              <select class="form-select" id="pickCat1Select" title="全部表示不过滤品类">
+                <option value="">全部</option>
+              </select>
+            </div>
+            <div class="picker-filter-item">
+              <label class="picker-filter-label" for="pickStdNameInput">标准产品名称</label>
+              <input class="form-input" id="pickStdNameInput" type="search" placeholder="名称关键字" autocomplete="off" enterkeyhint="search" />
+            </div>
+            <div class="picker-filter-item">
+              <label class="picker-filter-label" for="pickStdCodeInput">标准产品代码</label>
+              <input class="form-input" id="pickStdCodeInput" type="search" placeholder="代码关键字" autocomplete="off" enterkeyhint="search" />
+            </div>
+            <div class="picker-filter-actions">
+              <button type="button" class="btn btn-primary" id="pickerBtnQuery">查询</button>
+              <button type="button" class="btn" id="pickerBtnReset">重置</button>
+            </div>
+          </div>
+        </div>
+        <div class="picker-list-card">
+          <div class="picker-table-toolbar">
+            <span class="picker-table-title">可选产品</span>
+            <span class="muted" id="pickerResultCount">共 0 条</span>
+          </div>
+          <div class="table-container picker-table-scroll">
+            <table class="data-table picker-product-table">
+              <thead>
+                <tr>
+                  <th style="text-align:center;width:52px;">选择</th>
+                  <th style="min-width:88px;">一级分类</th>
+                  <th style="min-width:160px;">标准产品名称</th>
+                  <th style="min-width:100px;">标准产品代码</th>
+                  <th style="min-width:72px;">品牌</th>
+                  <th style="min-width:100px;">规格</th>
+                  <th style="text-align:center;min-width:96px;">是否益海产品</th>
+                </tr>
+              </thead>
+              <tbody id="productPickTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeProductPicker()">取消</button>
+        <button type="button" class="btn btn-primary" onclick="confirmProductPicker()">确定添加</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="importMatchModal" onclick="if(event.target===this) closeImportMatchModal()" role="dialog" aria-modal="true" aria-labelledby="importMatchModalTitle">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:520px;">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="importMatchModalTitle">调整标准产品匹配</div>
+          <div class="modal-sub">候选按综合相似度由高到低排列，可切换后确定</div>
+        </div>
+        <button type="button" class="modal-close" onclick="closeImportMatchModal()" aria-label="关闭" title="关闭">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="muted" id="importMatchModalIntro" style="margin-bottom:12px;"></p>
+        <div id="importMatchModalRadioWrap"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeImportMatchModal()">取消</button>
+        <button type="button" class="btn btn-primary" onclick="confirmImportMatchModal()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /** 后端服务地址：上传报价单 -> 预处理 -> 匹配 -> 报价（空字符串表示同域） */
+    const API_BASE_URL = (window.__API_BASE_URL__ || '').replace(/\/$/, '');
+    /** 每个运营公司对应唯一经销商（选择运营公司后自动带出，界面只读） */
+    const MOCK_OP_TO_DEALER = {
+      '丰厨(上海)供应链管理有限公司': '益海嘉里·上海分公司',
+      '丰厨(北京)供应链管理有限公司': '益海嘉里·长沙分公司'
+    };
+
+    const MOCK_OP_TO_CUSTOMERS = {
+      '丰厨(上海)供应链管理有限公司': [
+        '上海锦江餐饮有限公司', '沪上团餐服务中心', '华东社餐联盟（上海）',
+        '上海某某餐饮有限公司', '南京味觉连锁餐饮管理有限公司', '深圳万惠团膳有限公司'
+      ],
+      '丰厨(北京)供应链管理有限公司': [
+        '北京央厨供应链客户A', '华北团餐客户B', '京冀分销客户C',
+        '北京某某酒店管理有限公司', '北京央企后勤服务中心', '北京工会福利集采平台'
+      ]
+    };
+
+    /** 与详情页原型一致的品类枚举来源（节选） */
+    const ALL_LV1 = ['米面油','干调类','冻品类','调理类','蔬菜类','休闲食品','饮料','豆制品','禽蛋类','牛羊肉','鲜禽类','鲜猪肉','水果','水饮','水产','奶制品'];
+    /** product_match 集成：后端一级分类 -> 页面报价品类映射 */
+    const CAT1_TO_LV1 = {
+      '米面油': '米面油', '干调类': '干调类', '冻品类': '冻品类', '调理类': '调理类',
+      '蔬菜类': '蔬菜类', '休闲食品': '休闲食品', '豆制品': '豆制品', '禽蛋类': '禽蛋类',
+      '牛羊肉': '牛羊肉', '鲜禽类': '鲜禽类', '鲜猪肉': '鲜猪肉', '奶制品': '奶制品',
+      '水饮类': '饮料', '水果类': '水果', '鲜水产': '水产'
+    };
+
+    const MOCK_PRODUCTS = [
+      { code: 'P001', stdName: '特精小麦粉（标准）', name: '特精小麦粉', brand: '香满园', spec: '25kg/袋', outerUnit: '袋', cat1: '米面油', isYihai: true, market: 89 },
+      { code: 'P002', stdName: '金龙鱼大豆油一级5L×4（标准）', name: '金龙鱼大豆油一级', brand: '金龙鱼', spec: '5L×4', outerUnit: '箱', cat1: '米面油', isYihai: true, market: 268 },
+      { code: 'P003', stdName: '生抽酱油1.8L×6（标准）', name: '生抽酱油', brand: '海皇', spec: '1.8L×6', outerUnit: '箱', cat1: '干调类', isYihai: false, market: 42 },
+      { code: 'P004', stdName: '速冻水饺500g（标准）', name: '速冻水饺', brand: '丰厨', spec: '500g×20', outerUnit: '箱', cat1: '冻品类', isYihai: false, market: 156 },
+      { code: 'P005', stdName: '调理鸡腿肉10kg（标准）', name: '调理鸡腿肉', brand: '丰厨', spec: '10kg/箱', outerUnit: '箱', cat1: '调理类', isYihai: true, market: 198 },
+      { code: 'P006', stdName: '土豆净菜5kg（标准）', name: '土豆（净菜）', brand: '—', spec: '5kg/袋', outerUnit: '袋', cat1: '蔬菜类', isYihai: false, market: 18 },
+      { code: 'P007', stdName: '薯片组合装（标准）', name: '薯片组合装', brand: '休闲品牌X', spec: '组合', outerUnit: '箱', cat1: '休闲食品', isYihai: false, market: 35 },
+      { code: 'P008', stdName: '纯净水550ml×24（标准）', name: '纯净水', brand: '品牌Y', spec: '550ml×24', outerUnit: '箱', cat1: '饮料', isYihai: false, market: 22 },
+      /* 以下为新增 10 条弹窗模拟数据；标准产品名称含「金龙鱼」的标记为益海产品 */
+      { code: 'P009', stdName: '金龙鱼食用植物调和油5L×4（标准）', name: '金龙鱼调和油', brand: '金龙鱼', spec: '5L×4', outerUnit: '箱', cat1: '米面油', isYihai: true, market: 312 },
+      { code: 'P010', stdName: '金龙鱼稻米油1.8L×6（标准）', name: '金龙鱼稻米油', brand: '金龙鱼', spec: '1.8L×6', outerUnit: '箱', cat1: '米面油', isYihai: true, market: 128 },
+      { code: 'P011', stdName: '金龙鱼芝麻油400ml×12（标准）', name: '金龙鱼芝麻油', brand: '金龙鱼', spec: '400ml×12', outerUnit: '箱', cat1: '干调类', isYihai: true, market: 56 },
+      { code: 'P012', stdName: '陈醋500ml×12（标准）', name: '陈醋', brand: '地方品牌', spec: '500ml×12', outerUnit: '箱', cat1: '干调类', isYihai: false, market: 38 },
+      { code: 'P013', stdName: '金龙鱼饺子粉2.5kg×6（标准）', name: '金龙鱼饺子粉', brand: '金龙鱼', spec: '2.5kg×6', outerUnit: '箱', cat1: '米面油', isYihai: true, market: 95 },
+      { code: 'P014', stdName: '冻品青虾仁1kg×10（标准）', name: '青虾仁', brand: '海产牌', spec: '1kg×10', outerUnit: '箱', cat1: '冻品类', isYihai: false, market: 220 },
+      { code: 'P015', stdName: '金龙鱼花生浓香调和油4L（标准）', name: '金龙鱼花生调和油', brand: '金龙鱼', spec: '4L×4', outerUnit: '箱', cat1: '米面油', isYihai: true, market: 285 },
+      { code: 'P016', stdName: '内酯豆腐350g×24（标准）', name: '内酯豆腐', brand: '豆香园', spec: '350g×24', outerUnit: '箱', cat1: '豆制品', isYihai: false, market: 48 },
+      { code: 'P017', stdName: '鲜鸡蛋30枚/托（标准）', name: '鲜鸡蛋', brand: '禽蛋直供', spec: '30枚/托', outerUnit: '托', cat1: '禽蛋类', isYihai: false, market: 32 },
+      { code: 'P018', stdName: '金龙鱼玉米胚芽油900ml×15（标准）', name: '金龙鱼玉米油', brand: '金龙鱼', spec: '900ml×15', outerUnit: '箱', cat1: '米面油', isYihai: true, market: 175 }
+    ];
+
+    /**
+     * 导入模拟：假定已从 Excel/CSV 解析列
+     * 客户产品名称、品牌、规格、预估销量（预估销量写入明细「销量预估」列）
+     */
+    const IMPORT_MOCK_LINES = [
+      { name: '特精粉（客户简称）', brand: '香满园', spec: '25kg/袋', salesForecast: '120', collabMode: '大仓配送' },
+      { name: '速冻水饺家庭装', brand: '丰厨', spec: '500g×20', salesForecast: '80', collabMode: '供应商直送' },
+      { name: '大豆油一级5升', brand: '金龙鱼', spec: '5L×4', salesForecast: '200', collabMode: '大仓配送' }
+    ];
+
+    /** 参考客户历史报价产品（原型模拟） */
+    const REF_CUSTOMER_QUOTE_PRODUCTS = {
+      '上海锦江餐饮有限公司': [
+        { code: 'P002', customerName: '一级大豆油（锦江）', customerBrand: '金龙鱼', customerSpec: '5L×4', salesForecast: '180', markupRate: '6' },
+        { code: 'P003', customerName: '生抽酱油（锦江）', customerBrand: '海皇', customerSpec: '1.8L×6', salesForecast: '90', markupRate: '2' }
+      ],
+      '上海某某餐饮有限公司': [
+        { code: 'P002', customerName: '一级大豆油（社餐）', customerBrand: '金龙鱼', customerSpec: '5L×4', salesForecast: '160', markupRate: '5' },
+        { code: 'P001', customerName: '特精小麦粉（社餐）', customerBrand: '香满园', customerSpec: '25kg/袋', salesForecast: '120', markupRate: '3' }
+      ],
+      '沪上团餐服务中心': [
+        { code: 'P004', customerName: '速冻水饺（团餐）', customerBrand: '丰厨', customerSpec: '500g×20', salesForecast: '120', markupRate: '5' },
+        { code: 'P005', customerName: '调理鸡腿肉（团餐）', customerBrand: '丰厨', customerSpec: '10kg/箱', salesForecast: '60', markupRate: '4' }
+      ],
+      '华东社餐联盟（上海）': [
+        { code: 'P001', customerName: '特精小麦粉（社餐）', customerBrand: '香满园', customerSpec: '25kg/袋', salesForecast: '140', markupRate: '3' },
+        { code: 'P015', customerName: '花生调和油（社餐）', customerBrand: '金龙鱼', customerSpec: '4L×4', salesForecast: '70', markupRate: '4' }
+      ],
+      '北京央厨供应链客户A': [
+        { code: 'P010', customerName: '稻米油（央厨）', customerBrand: '金龙鱼', customerSpec: '1.8L×6', salesForecast: '110', markupRate: '5' },
+        { code: 'P014', customerName: '青虾仁（央厨）', customerBrand: '海产牌', customerSpec: '1kg×10', salesForecast: '45', markupRate: '8' }
+      ],
+      '华北团餐客户B': [
+        { code: 'P017', customerName: '鲜鸡蛋（团餐）', customerBrand: '禽蛋直供', customerSpec: '30枚/托', salesForecast: '200', markupRate: '1' },
+        { code: 'P004', customerName: '速冻水饺（华北）', customerBrand: '丰厨', customerSpec: '500g×20', salesForecast: '95', markupRate: '4' }
+      ],
+      '京冀分销客户C': [
+        { code: 'P009', customerName: '金龙鱼调和油（分销）', customerBrand: '金龙鱼', customerSpec: '5L×4', salesForecast: '150', markupRate: '3' }
+      ],
+      '北京某某酒店管理有限公司': [
+        { code: 'P010', customerName: '稻米油（酒店）', customerBrand: '金龙鱼', customerSpec: '1.8L×6', salesForecast: '85', markupRate: '6' },
+        { code: 'P011', customerName: '芝麻油（酒店）', customerBrand: '金龙鱼', customerSpec: '400ml×12', salesForecast: '40', markupRate: '7' }
+      ],
+      '广州某某团餐服务公司': [
+        { code: 'P004', customerName: '速冻水饺（团餐）', customerBrand: '丰厨', customerSpec: '500g×20', salesForecast: '100', markupRate: '5' },
+        { code: 'P005', customerName: '调理鸡腿肉（团餐）', customerBrand: '丰厨', customerSpec: '10kg/箱', salesForecast: '55', markupRate: '4' }
+      ],
+      '益海嘉里食品营销有限公司广州分公司': [
+        { code: 'P002', customerName: '大豆油（广州）', customerBrand: '金龙鱼', customerSpec: '5L×4', salesForecast: '130', markupRate: '4' }
+      ]
+    };
+
+    function importLineSalesForecastToCell(line) {
+      const v = line && line.salesForecast;
+      if (v == null || String(v).trim() === '') return '';
+      return String(v).trim();
+    }
+
+    /** 客户渠道类型主数据（与《客户类型基础数据》§3.9 一致） */
+    const MASTER_CUSTOMER_CHANNELS = ['团餐及大众餐饮', '酒店及高端餐饮'];
+    const CUSTOMER_TYPES_BY_CHANNEL = {
+      '团餐及大众餐饮': ['政企客户', '团餐公司', '社餐连锁', '其他', '福利团购', '集团内公司'],
+      '酒店及高端餐饮': ['酒店', '餐饮', '经销', '其他', '德立安子公司']
+    };
+    /** 与详情页同源：客户与项目点（非「临客询价」）；按渠道+客户类型过滤后展示 */
+    const MOCK_CUSTOMERS = [
+      { id: 'c1', name: '上海某某餐饮有限公司', customerType: '社餐连锁', customerChannel: '团餐及大众餐饮' },
+      { id: 'c5', name: '苏州某某连锁餐饮有限公司', customerType: '社餐连锁', customerChannel: '团餐及大众餐饮' },
+      { id: 'c10', name: '上海锦江餐饮有限公司', customerType: '社餐连锁', customerChannel: '团餐及大众餐饮' },
+      { id: 'c11', name: '南京味觉连锁餐饮管理有限公司', customerType: '社餐连锁', customerChannel: '团餐及大众餐饮' },
+      { id: 'c31', name: '京冀分销客户C', customerType: '社餐连锁', customerChannel: '团餐及大众餐饮' },
+      { id: 'c3', name: '广州某某团餐服务公司', customerType: '团餐公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c6', name: '益海嘉里食品营销有限公司广州分公司', customerType: '团餐公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c7', name: '广州益嘉德立安食品有限公司', customerType: '团餐公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c8', name: '广州采华餐饮管理有限公司三亚河心岛分公司', customerType: '团餐公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c9', name: '广州市五丰行贸易有限公司', customerType: '团餐公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c12', name: '沪上团餐服务中心', customerType: '团餐公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c13', name: '深圳万惠团膳有限公司', customerType: '团餐公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c29', name: '北京央厨供应链客户A', customerType: '团餐公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c30', name: '华北团餐客户B', customerType: '团餐公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c4', name: '杭州某某政企客户', customerType: '政企客户', customerChannel: '团餐及大众餐饮' },
+      { id: 'c14', name: '上海市政府机关事务管理局（配餐）', customerType: '政企客户', customerChannel: '团餐及大众餐饮' },
+      { id: 'c15', name: '北京央企后勤服务中心', customerType: '政企客户', customerChannel: '团餐及大众餐饮' },
+      { id: 'c16', name: '华东社餐联盟（上海）', customerType: '政企客户', customerChannel: '团餐及大众餐饮' },
+      { id: 'c17', name: '武汉综合配餐试点客户', customerType: '其他', customerChannel: '团餐及大众餐饮' },
+      { id: 'c18', name: '成都渠道拓展客户', customerType: '其他', customerChannel: '团餐及大众餐饮' },
+      { id: 'c19', name: '上海员工福利团购中心', customerType: '福利团购', customerChannel: '团餐及大众餐饮' },
+      { id: 'c20', name: '北京工会福利集采平台', customerType: '福利团购', customerChannel: '团餐及大众餐饮' },
+      { id: 'c21', name: '丰厨（上海）内部配餐中心', customerType: '集团内公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c22', name: '益海嘉里集团员工餐厅（上海）', customerType: '集团内公司', customerChannel: '团餐及大众餐饮' },
+      { id: 'c2', name: '北京某某酒店管理有限公司', customerType: '酒店', customerChannel: '酒店及高端餐饮' },
+      { id: 'c23', name: '上海国际 resort 酒店集团', customerType: '酒店', customerChannel: '酒店及高端餐饮' },
+      { id: 'c24', name: '广州白天鹅宾馆供应链', customerType: '酒店', customerChannel: '酒店及高端餐饮' },
+      { id: 'c32', name: '杭州香格里拉饭店', customerType: '酒店', customerChannel: '酒店及高端餐饮' },
+      { id: 'c25', name: '北京高端会所餐饮（国贸）', customerType: '餐饮', customerChannel: '酒店及高端餐饮' },
+      { id: 'c26', name: '上海外滩精品餐饮联采', customerType: '餐饮', customerChannel: '酒店及高端餐饮' },
+      { id: 'c27', name: '华东高端餐饮经销商A', customerType: '经销', customerChannel: '酒店及高端餐饮' },
+      { id: 'c28', name: '德立安（上海）餐饮供应链', customerType: '德立安子公司', customerChannel: '酒店及高端餐饮' }
+    ];
+    const MOCK_PROJECTS_BY_CUSTOMER_ID = {
+      c1: ['上海-项目点A', '上海-项目点B', '上海-浦东项目'],
+      c2: ['北京-总部项目', '北京-朝阳项目', '北京-国贸配餐点'],
+      c3: ['广州-天河项目', '广州-越秀项目'],
+      c4: ['杭州-滨江项目', '杭州-西湖项目'],
+      c5: ['苏州-园区项目', '苏州-姑苏项目'],
+      c6: ['广州-黄埔项目', '广州-白云项目'],
+      c7: ['广州-番禺项目', '广州-南沙项目'],
+      c8: ['三亚-河心岛项目', '广州-天河配送点'],
+      c9: ['广州-越秀项目', '广州-海珠项目'],
+      c10: ['锦江-徐汇项目', '锦江-长宁项目', '锦江-浦东项目'],
+      c11: ['南京-江宁项目', '南京-鼓楼项目'],
+      c12: ['沪上-张江项目', '沪上-闵行项目', '沪上-宝山项目'],
+      c13: ['深圳-南山项目', '深圳-福田项目'],
+      c14: ['机关-浦东配餐点', '机关-人民广场配餐点'],
+      c15: ['央企-总部食堂', '央企-亦庄配餐点'],
+      c16: ['联盟-徐汇联采点', '联盟-杨浦联采点'],
+      c17: ['武汉-光谷试点', '武汉-江汉试点'],
+      c18: ['成都-高新项目', '成都-武侯项目'],
+      c19: ['福利-浦东团购仓', '福利-闵行团购仓'],
+      c20: ['福利-朝阳团购仓', '福利-海淀团购仓'],
+      c21: ['内部-上海总部食堂', '内部-上海仓储配餐'],
+      c22: ['集团-金龙鱼大厦食堂', '集团-研发中心配餐'],
+      c23: ['resort-崇明项目', 'resort-青浦项目'],
+      c24: ['白天鹅-沙面项目', '白天鹅-滨江项目'],
+      c25: ['国贸-会所A', '国贸-会所B'],
+      c26: ['外滩-联采中心', '外滩-北外滩项目'],
+      c27: ['经销-华东仓配', '经销-苏南仓配'],
+      c28: ['德立安-上海仓', '德立安-杭州仓'],
+      c29: ['央厨-北京顺义项目', '央厨-北京通州项目'],
+      c30: ['华北-天津项目', '华北-石家庄项目'],
+      c31: ['京冀-廊坊分销点', '京冀-保定分销点'],
+      c32: ['杭州-西湖项目', '杭州-钱江项目']
+    };
+
+    /** product_match 集成：特殊客户预处理配置 */
+    const SPECIAL_CUSTOMER_PATTERNS = [
+      { pattern: /香格里拉|Shangri[-\s]?La/i, label: '香格里拉' }
+    ];
+
+    function getActiveSpecialCustomer() {
+      const names = selectedCustomerNames ? selectedCustomerNames() : [];
+      if (typeof isAdhocQuoteType === 'function' && isAdhocQuoteType()) {
+        const manual = (document.getElementById('customerName')?.value || '').trim();
+        if (manual) names.push(manual);
+      }
+      for (const n of names) {
+        for (const p of SPECIAL_CUSTOMER_PATTERNS) {
+          if (p.pattern.test(n)) {
+            return { name: n, label: p.label };
+          }
+        }
+      }
+      return null;
+    }
+
+    function refreshSpecialCustomerBanner() {
+      const banner = document.getElementById('specialCustomerBanner');
+      const nameEl = document.getElementById('specialCustomerName');
+      if (!banner || !nameEl) return;
+      const sp = getActiveSpecialCustomer();
+      if (sp) {
+        nameEl.textContent = sp.name || sp.label;
+        banner.style.display = 'flex';
+      } else {
+        nameEl.textContent = '—';
+        banner.style.display = 'none';
+      }
+    }
+
+    function bindSpecialCustomerBannerEvents() {
+      const inp = document.getElementById('customerName');
+      if (inp && inp.dataset.pmBannerBound !== '1') {
+        inp.dataset.pmBannerBound = '1';
+        inp.addEventListener('input', refreshSpecialCustomerBanner);
+      }
+    }
+
+    let currentStep = 1;
+    const detailRows = [];
+    const selectedDetailRowKeys = new Set();
+    let productPickSelectedCodes = new Set();
+    let quoteTitleTouched = false;
+    let selectedCustomerIds = [];
+    let customerDropdownOpen = false;
+    let customerSearchKeyword = '';
+    let selectedProjectSites = [];
+    let projectSiteDropdownOpen = false;
+    let projectSiteSearchKeyword = '';
+    /** 协作模式枚举（导入模板/解析）：大仓配送、供应商直送 */
+    const IMPORT_COLLAB_MODES = ['大仓配送', '供应商直送'];
+
+    /** 采购基准价模式枚举（与详情页一致） */
+    const PURCHASE_MODE_OPTIONS = ['市调价格', '参考现客户价格', '网站价格', '采购价格(有效且最低)'];
+
+    /** 单位：明细行可选（默认取产品外包装单位） */
+    const UNIT_OPTIONS = ['箱', '袋', '托', '件', '瓶', '包', '桶', 'kg'];
+
+    function defaultOuterUnitFromProduct(p) {
+      const u = String(p && (p.outerUnit || p.outerPackUnit || p.outerPackageUnit || p.outerUom) || '').trim();
+      if (u) return u;
+      const spec = String(p && p.spec || '').trim();
+      const m = spec.match(/\/\s*([^\s]+)\s*$/);
+      if (m && m[1]) return String(m[1]).trim();
+      if (spec.includes('×')) return '箱';
+      return '';
+    }
+
+    /**
+     * 与「产品分类毛利设置」及 UI-报价申请.html 中 BENCHMARK_MODE_SOURCE_ROWS 同源（原型枚举）。
+     * 上线后由接口按经销商公司、客户类型、产品一级分类返回；矩阵与明细中最低/最高毛利率只读展示命中结果。
+     */
+    const BENCHMARK_MODE_SOURCE_ROWS = [
+      { id: 'r1', branch: '益海嘉里·浙江分公司', lv1Cats: ['米面油', '干调类'], custTypes: ['团餐', '社餐', '企事业食堂'], minMargin: 1, maxMargin: 15 },
+      { id: 'r2', branch: '益海嘉里·浙江分公司', lv1Cats: ['冻品类', '调理类'], custTypes: ['团餐', '企事业食堂'], minMargin: 8, maxMargin: 22 },
+      { id: 'r3', branch: '益海嘉里·浙江分公司', lv1Cats: ['蔬菜类', '牛羊肉', '鲜猪肉'], custTypes: ['企事业食堂'], minMargin: 11, maxMargin: 22 },
+      { id: 'r4', branch: '益海嘉里·浙江分公司', lv1Cats: ['禽蛋类'], custTypes: ['团餐', '社餐', '企事业食堂'], minMargin: 7, maxMargin: 12 },
+      { id: 'r5', branch: '益海嘉里·浙江分公司', lv1Cats: ['豆制品', '鲜禽类'], custTypes: ['团餐', '企事业食堂'], minMargin: 7, maxMargin: 16 },
+      { id: 'r6', branch: '益海嘉里·浙江分公司', lv1Cats: ['水果', '水饮', '水产', '奶制品', '休闲食品'], custTypes: ['企事业食堂'], minMargin: 8, maxMargin: 9 },
+      { id: 'r7', branch: '益海嘉里·长沙分公司', lv1Cats: ['米面油', '干调类', '冻品类', '调理类'], custTypes: ['团餐', '社餐', '企事业食堂', '分销&现款'], minMargin: 1, maxMargin: 6 },
+      { id: 'r8', branch: '益海嘉里·上海分公司', lv1Cats: ['米面油', '干调类'], custTypes: ['酒店', '社餐'], minMargin: 3, maxMargin: 18 },
+      { id: 'r9', branch: '益海嘉里·广州分公司', lv1Cats: ['调理类', '冻品类'], custTypes: ['团餐', '分销&现款'], minMargin: 5, maxMargin: 20 },
+      { id: 'r10', branch: '益海嘉里·上海分公司', lv1Cats: ['休闲食品', '饮料'], custTypes: ['酒店'], minMargin: 4, maxMargin: 8 },
+      { id: 'r11', branch: '益海嘉里·浙江分公司', lv1Cats: ['米面油'], custTypes: ['酒店', '社餐'], minMargin: 2, maxMargin: 10 },
+      { id: 'r12', branch: '益海嘉里·上海分公司', lv1Cats: ['米面油', '干调类', '冻品类', '调理类', '休闲食品', '饮料'], custTypes: ['团餐'], minMargin: 3, maxMargin: 18 }
+    ];
+
+    /** 应用范围摘要（与详情页 PRD.Quote-Request-Detail.html 同源；customerType 为毛利主数据口径） */
+    const BENCHMARK_SCOPE_DETAIL_LINES = [
+      { branch: '益海嘉里·浙江分公司', customerType: '团餐', lv1: '米面油', refScope: '税率：13%' },
+      { branch: '益海嘉里·浙江分公司', customerType: '团餐', lv1: '干调类', refScope: '品牌：有品牌时应用' },
+      { branch: '益海嘉里·浙江分公司', customerType: '团餐', lv1: '冻品类', refScope: '是否益海：是' },
+      { branch: '益海嘉里·长沙分公司', customerType: '团餐', lv1: '冻品类', refScope: '是否益海：是' },
+      { branch: '益海嘉里·浙江分公司', customerType: '社餐', lv1: '米面油', refScope: '是否益海：是' },
+      { branch: '益海嘉里·上海分公司', customerType: '社餐', lv1: '米面油', refScope: '是否益海：全部' },
+      { branch: '益海嘉里·上海分公司', customerType: '团餐', lv1: '米面油', refScope: '是否益海：是' },
+      { branch: '益海嘉里·上海分公司', customerType: '团餐', lv1: '干调类', refScope: '税率：13%' },
+      { branch: '益海嘉里·上海分公司', customerType: '团餐', lv1: '冻品类', refScope: '品牌：有品牌时应用' },
+      { branch: '益海嘉里·广州分公司', customerType: '团餐', lv1: '调理类', refScope: '是否益海：是' },
+      { branch: '益海嘉里·上海分公司', customerType: '酒店', lv1: '米面油', refScope: '税率：13%' }
+    ];
+
+    /** 表单客户类型 → 产品分类毛利设置主数据客户类型（原型映射） */
+    function mapCustomerTypeForBenchmarkMaster(uiCustomerType) {
+      const t = String(uiCustomerType || '').trim();
+      const map = {
+        '团餐公司': '团餐',
+        '社餐连锁': '社餐',
+        '政企客户': '企事业食堂',
+        '福利团购': '企事业食堂',
+        '集团内公司': '团餐',
+        '其他': '团餐',
+        '酒店': '酒店',
+        '餐饮': '酒店',
+        '经销': '分销&现款',
+        '德立安子公司': '社餐'
+      };
+      return map[t] || t;
+    }
+
+    function masterRowsMatchingDealerAndCustomerType(dealerBranch, customerType) {
+      const b = String(dealerBranch || '').trim();
+      const ct = mapCustomerTypeForBenchmarkMaster(customerType);
+      if (!b || !ct) return [];
+      return BENCHMARK_MODE_SOURCE_ROWS.filter(
+        (m) => String(m.branch || '').trim() === b && (m.custTypes || []).includes(ct)
+      );
+    }
+
+    function scopeLinesForDisplay(dealerBranch, customerType, selectedLv1Cats) {
+      const b = String(dealerBranch || '').trim();
+      const ct = mapCustomerTypeForBenchmarkMaster(customerType);
+      const cats = selectedLv1Cats || [];
+      if (!b || !ct || !cats.length) return [];
+      const catSet = new Set(cats);
+      return BENCHMARK_SCOPE_DETAIL_LINES.filter(
+        (line) => line.branch === b && line.customerType === ct && catSet.has(line.lv1)
+      );
+    }
+
+    function scopeLinesForCategory(dealerBranch, customerType, cat) {
+      return scopeLinesForDisplay(dealerBranch, customerType, cat ? [cat] : []);
+    }
+
+    function buildScopeRenderLines(dealerBranch, customerType, cat) {
+      const scopeLines = scopeLinesForCategory(dealerBranch, customerType, cat) || [];
+      const scoped = scopeLines.find((l) => {
+        const t = String(l?.refScope || '').trim();
+        return t && t !== '是否益海：全部';
+      }) || null;
+      const noneScoped = scopeLines.find((l) => {
+        const t = String(l?.refScope || '').trim();
+        return !t || t === '是否益海：全部';
+      }) || null;
+      const syntheticNone = scoped && !noneScoped ? { refScope: '' } : null;
+      const linesToRender = (scoped ? [scoped] : []).concat((noneScoped || syntheticNone) ? [noneScoped || syntheticNone] : []);
+      return linesToRender.length ? linesToRender : [null];
+    }
+
+    function formatScopeDisplayText(line) {
+      const rawScopeText = String(line?.refScope || '').trim();
+      return (rawScopeText && rawScopeText !== '是否益海：全部') ? rawScopeText : '—';
+    }
+
+    /** 命中规则：同详情页「产品分类毛利」子表按一级分类取首条匹配（已按经销商+客户类型过滤） */
+    function findMarginRuleForLv1(dealerBranch, customerType, lv1) {
+      const rows = masterRowsMatchingDealerAndCustomerType(dealerBranch, customerType);
+      const d = String(lv1 || '').trim();
+      for (let i = 0; i < rows.length; i++) {
+        const m = rows[i];
+        if ((m.lv1Cats || []).includes(d)) return m;
+      }
+      return null;
+    }
+
+    /** 矩阵/明细只读：当前第一步所选经销商公司 + 客户类型 + 品类 */
+    function getMarginRuleFromSettings(cat1) {
+      const dealer = ($('dealerCompany')?.value || '').trim();
+      const ct = ($('customerType')?.value || '').trim();
+      return findMarginRuleForLv1(dealer, ct, cat1);
+    }
+
+    function formatMarginPctDisplay(rule, key) {
+      if (!rule) return '—';
+      const n = Number(rule[key]);
+      return Number.isFinite(n) ? String(n) : '—';
+    }
+
+    /** 品类 → { mode, refCustomer, refWebsite }；每品类仅允许一种模式，参考客户/网站在模式之后按行填写 */
+    let categoryModeState = {};
+
+    function $(id) { return document.getElementById(id); }
+
+    function isAdhocQuoteType() {
+      return ($('quoteType')?.value || '').trim() === '临客询价';
+    }
+
+    function initCustomerProjectDropdowns() {
+      const selC = $('customerSelect');
+      if (!selC) return;
+      refreshCustomerHiddenOptions();
+      bindCustomerMultiUI();
+    }
+
+    function initCustomerChannelMasterOptions() {
+      const chSel = $('customerChannel');
+      if (!chSel) return;
+      const keep = chSel.value;
+      chSel.innerHTML = '<option value="">请选择</option>';
+      MASTER_CUSTOMER_CHANNELS.forEach((ch) => {
+        const o = document.createElement('option');
+        o.value = ch;
+        o.textContent = ch;
+        chSel.appendChild(o);
+      });
+      if (keep && MASTER_CUSTOMER_CHANNELS.includes(keep)) chSel.value = keep;
+    }
+
+    function populateCustomerTypeOptions(clearSelected) {
+      const chSel = $('customerChannel');
+      const ctSel = $('customerType');
+      if (!ctSel) return;
+      const prev = clearSelected ? '' : ctSel.value;
+      ctSel.innerHTML = '<option value="">请选择</option>';
+      const channel = (chSel && chSel.value || '').trim();
+      const types = CUSTOMER_TYPES_BY_CHANNEL[channel] || [];
+      types.forEach((t) => {
+        const o = document.createElement('option');
+        o.value = t;
+        o.textContent = t;
+        ctSel.appendChild(o);
+      });
+      if (!clearSelected && prev && types.includes(prev)) ctSel.value = prev;
+    }
+
+    function getFilteredCustomerOptions() {
+      const channel = ($('customerChannel')?.value || '').trim();
+      const type = ($('customerType')?.value || '').trim();
+      if (!channel || !type) return [];
+      return MOCK_CUSTOMERS.filter((c) => c.customerChannel === channel && c.customerType === type);
+    }
+
+    function refreshCustomerHiddenOptions() {
+      const selC = $('customerSelect');
+      if (!selC) return;
+      const validIds = getFilteredCustomerOptions().map((c) => c.id);
+      selectedCustomerIds = selectedCustomerIds.filter((id) => validIds.includes(id));
+      selC.innerHTML = '';
+      getFilteredCustomerOptions().forEach((c) => {
+        const o = document.createElement('option');
+        o.value = c.id;
+        o.textContent = c.name;
+        o.selected = selectedCustomerIds.includes(c.id);
+        selC.appendChild(o);
+      });
+    }
+
+    function selectedCustomerNames() {
+      return selectedCustomerIds
+        .map((id) => getCustomerMetaById(id))
+        .filter(Boolean)
+        .map((c) => c.name);
+    }
+
+    function renderCustomerMulti() {
+      const tagsEl = $('customerTags');
+      const ph = $('customerPlaceholder');
+      const box = $('customerMultiBox');
+      const drop = $('customerDropdown');
+      const searchInput = $('customerSearchInput');
+      if (!tagsEl || !ph || !box) return;
+      tagsEl.innerHTML = '';
+      selectedCustomerIds.forEach((id) => {
+        const c = getCustomerMetaById(id);
+        if (!c) return;
+        const span = document.createElement('span');
+        span.className = 'project-multi-tag';
+        span.innerHTML = `<span class="project-multi-tag-text" title="${escapeAttr(c.name)}">${escapeHtml(c.name)}</span><button type="button" aria-label="移除">×</button>`;
+        span.querySelector('button').onclick = (ev) => {
+          ev.stopPropagation();
+          selectedCustomerIds = selectedCustomerIds.filter((x) => x !== id);
+          selectedProjectSites = [];
+          refreshCustomerHiddenOptions();
+          populateProjectSitesForCustomer();
+          renderCustomerMulti();
+          renderProjectSiteMulti();
+          refreshQuoteTitle(false);
+        };
+        tagsEl.appendChild(span);
+      });
+      ph.style.display = 'none';
+      if (searchInput) {
+        searchInput.value = customerDropdownOpen ? customerSearchKeyword : '';
+        searchInput.placeholder = selectedCustomerIds.length ? '继续搜索' : '请选择（可多选）';
+      }
+      if (drop && customerDropdownOpen) renderCustomerDropdown();
+      refreshSpecialCustomerBanner();
+    }
+
+    function renderCustomerDropdown() {
+      const drop = $('customerDropdown');
+      if (!drop) return;
+      const keyword = String(customerSearchKeyword || '').trim().toLowerCase();
+      const allOpts = getFilteredCustomerOptions();
+      const opts = keyword
+        ? allOpts.filter((c) => c.name.toLowerCase().includes(keyword))
+        : allOpts;
+      drop.innerHTML = '';
+      if (!allOpts.length) {
+        const empty = document.createElement('div');
+        empty.className = 'project-multi-option';
+        empty.style.cssText = 'color:#999;cursor:default;';
+        empty.textContent = '请先选择客户渠道和客户类型';
+        drop.appendChild(empty);
+        return;
+      }
+      if (!opts.length) {
+        const empty = document.createElement('div');
+        empty.className = 'project-multi-option';
+        empty.style.cssText = 'color:#999;cursor:default;';
+        empty.textContent = '无匹配客户';
+        drop.appendChild(empty);
+        return;
+      }
+      opts.forEach((c, idx) => {
+        const checked = selectedCustomerIds.includes(c.id);
+        const row = document.createElement('div');
+        row.className = `project-multi-option${idx === 0 ? ' is-active' : ''}${checked ? ' is-selected' : ''}`;
+        row.title = c.name;
+        row.textContent = c.name;
+        row.onclick = (ev) => {
+          ev.stopPropagation();
+          if (!checked) {
+            if (!selectedCustomerIds.includes(c.id)) selectedCustomerIds.push(c.id);
+          } else {
+            selectedCustomerIds = selectedCustomerIds.filter((id) => id !== c.id);
+          }
+          customerSearchKeyword = '';
+          selectedProjectSites = [];
+          refreshCustomerHiddenOptions();
+          populateProjectSitesForCustomer();
+          renderCustomerMulti();
+          renderProjectSiteMulti();
+          refreshQuoteTitle(false);
+        };
+        drop.appendChild(row);
+      });
+    }
+
+    function toggleCustomerDropdown(show) {
+      const drop = $('customerDropdown');
+      const wrap = $('customerMultiWrap');
+      if (!drop) return;
+      customerDropdownOpen = show;
+      if (!show) customerSearchKeyword = '';
+      drop.style.display = show ? 'block' : 'none';
+      if (wrap) wrap.classList.toggle('is-dropdown-open', !!show);
+      const input = $('customerSearchInput');
+      if (input) input.value = show ? customerSearchKeyword : '';
+      if (show) {
+        refreshCustomerHiddenOptions();
+        renderCustomerDropdown();
+        requestAnimationFrame(() => input?.focus());
+      }
+    }
+
+    function bindCustomerMultiUI() {
+      const box = $('customerMultiBox');
+      if (!box || box.dataset.bound === '1') return;
+      box.dataset.bound = '1';
+      box.addEventListener('click', (e) => {
+        if (isAdhocQuoteType()) return;
+        e.stopPropagation();
+        if (e.target && e.target.id === 'customerSearchInput') {
+          toggleCustomerDropdown(true);
+          return;
+        }
+        toggleCustomerDropdown(!customerDropdownOpen);
+      });
+      const input = $('customerSearchInput');
+      if (input && input.dataset.bound !== '1') {
+        input.dataset.bound = '1';
+        input.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleCustomerDropdown(true);
+        });
+        input.addEventListener('input', (e) => {
+          customerSearchKeyword = e.target.value || '';
+          toggleCustomerDropdown(true);
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            toggleCustomerDropdown(false);
+          }
+        });
+      }
+      document.addEventListener('click', () => toggleCustomerDropdown(false));
+    }
+
+    function bindCustomerChannelCascade() {
+      const chSel = $('customerChannel');
+      if (chSel && chSel.dataset.cascadeBound !== '1') {
+        chSel.dataset.cascadeBound = '1';
+        chSel.addEventListener('change', () => {
+          populateCustomerTypeOptions(true);
+          selectedCustomerIds = [];
+          selectedProjectSites = [];
+          refreshCustomerHiddenOptions();
+          renderCustomerMulti();
+          populateProjectSitesForCustomer();
+          renderProjectSiteMulti();
+          if (currentStep === 2) {
+            syncCategoryModeMatrix();
+            renderDetailTable();
+          }
+        });
+      }
+      const ctSel = $('customerType');
+      if (ctSel && ctSel.dataset.adhocCtBound !== '1') {
+        ctSel.dataset.adhocCtBound = '1';
+        ctSel.addEventListener('change', () => {
+          selectedCustomerIds = [];
+          selectedProjectSites = [];
+          refreshCustomerHiddenOptions();
+          renderCustomerMulti();
+          populateProjectSitesForCustomer();
+          renderProjectSiteMulti();
+          if (customerDropdownOpen) renderCustomerDropdown();
+          if (currentStep === 2) {
+            syncCategoryModeMatrix();
+            renderDetailTable();
+          }
+        });
+      }
+    }
+
+    function updateCustomerChannelLabelRequired() {
+      const lbl = $('customerChannelLabel');
+      if (!lbl) return;
+      lbl.classList.add('req');
+    }
+
+    function initDefaultCustomerCascade() {
+      if (isAdhocQuoteType()) return;
+      const chSel = $('customerChannel');
+      const ctSel = $('customerType');
+      if (!chSel || !ctSel || chSel.value) return;
+      chSel.value = '酒店及高端餐饮';
+      populateCustomerTypeOptions(false);
+      ctSel.value = '酒店';
+      selectedCustomerIds = ['c32'];
+      selectedProjectSites = ['杭州-西湖项目'];
+      refreshCustomerHiddenOptions();
+      renderCustomerMulti();
+      populateProjectSitesForCustomer();
+      renderProjectSiteMulti();
+    }
+
+    function syncCustomerChannelFieldState() {
+      initCustomerChannelMasterOptions();
+      bindCustomerChannelCascade();
+      updateCustomerChannelLabelRequired();
+      const chSel = $('customerChannel');
+      if (!chSel) return;
+      chSel.disabled = false;
+      if (isAdhocQuoteType()) {
+        chSel.removeAttribute('title');
+      } else {
+        chSel.setAttribute('title', '请先选择客户渠道，再选择客户类型、客户名称与项目点');
+      }
+      populateCustomerTypeOptions(false);
+      syncCustomerTypeFieldState();
+    }
+
+    function getCustomerDisplayName() {
+      if (isAdhocQuoteType()) return ($('customerName')?.value || '').trim();
+      return selectedCustomerNames().join('、');
+    }
+
+    function buildDefaultQuoteTitle() {
+      const name = getCustomerDisplayName();
+      const s = $('quoteStart')?.value || '';
+      const e = $('quoteEnd')?.value || '';
+      if (!name || !s || !e) return '';
+      return name + s + e + '销售报价';
+    }
+
+    function refreshQuoteTitle(force) {
+      if (quoteTitleTouched && !force) return;
+      const t = buildDefaultQuoteTitle();
+      const el = $('quoteTitle');
+      if (el && t) el.value = t;
+    }
+
+    function getProjectSiteOptionsForCustomer() {
+      const seen = new Set();
+      const options = [];
+      selectedCustomerIds.forEach((cid) => {
+        (MOCK_PROJECTS_BY_CUSTOMER_ID[cid] || []).forEach((name) => {
+          if (seen.has(name)) return;
+          seen.add(name);
+          options.push(name);
+        });
+      });
+      return options;
+    }
+
+    function populateProjectSitesForCustomer() {
+      const selP = $('projectSiteSelect');
+      if (!selP) return;
+      const valid = getProjectSiteOptionsForCustomer();
+      selectedProjectSites = selectedProjectSites.filter((name) => valid.includes(name));
+      selP.innerHTML = '';
+      valid.forEach((name) => {
+        const o = document.createElement('option');
+        o.value = name;
+        o.textContent = name;
+        o.selected = selectedProjectSites.includes(name);
+        selP.appendChild(o);
+      });
+    }
+
+    function renderProjectSiteMulti() {
+      const tagsEl = $('projectSiteTags');
+      const ph = $('projectSitePlaceholder');
+      const box = $('projectSiteMultiBox');
+      const drop = $('projectSiteDropdown');
+      const searchInput = $('projectSiteSearchInput');
+      if (!tagsEl || !ph || !box) return;
+      tagsEl.innerHTML = '';
+      selectedProjectSites.forEach((name) => {
+        const span = document.createElement('span');
+        span.className = 'project-multi-tag';
+        span.innerHTML = `<span class="project-multi-tag-text" title="${escapeAttr(name)}">${escapeHtml(name)}</span><button type="button" aria-label="移除">×</button>`;
+        span.querySelector('button').onclick = (ev) => {
+          ev.stopPropagation();
+          selectedProjectSites = selectedProjectSites.filter((n) => n !== name);
+          renderProjectSiteMulti();
+        };
+        tagsEl.appendChild(span);
+      });
+      ph.style.display = 'none';
+      if (searchInput) {
+        searchInput.value = projectSiteDropdownOpen ? projectSiteSearchKeyword : '';
+        searchInput.placeholder = selectedProjectSites.length ? '继续搜索' : '请选择（可多选）';
+      }
+      if (drop && projectSiteDropdownOpen) renderProjectSiteDropdown();
+    }
+
+    function renderProjectSiteDropdown() {
+      const drop = $('projectSiteDropdown');
+      if (!drop) return;
+      const keyword = String(projectSiteSearchKeyword || '').trim().toLowerCase();
+      const allOpts = getProjectSiteOptionsForCustomer();
+      const opts = keyword
+        ? allOpts.filter((name) => String(name || '').toLowerCase().includes(keyword))
+        : allOpts;
+      drop.innerHTML = '';
+      if (!allOpts.length) {
+        const empty = document.createElement('div');
+        empty.className = 'project-multi-option';
+        empty.style.cssText = 'color:#999;cursor:default;';
+        empty.textContent = '请先选择客户';
+        drop.appendChild(empty);
+        return;
+      }
+      if (!opts.length) {
+        const empty = document.createElement('div');
+        empty.className = 'project-multi-option';
+        empty.style.cssText = 'color:#999;cursor:default;';
+        empty.textContent = '无匹配项目点';
+        drop.appendChild(empty);
+        return;
+      }
+      opts.forEach((name, idx) => {
+        const checked = selectedProjectSites.includes(name);
+        const row = document.createElement('div');
+        row.className = `project-multi-option${idx === 0 ? ' is-active' : ''}${checked ? ' is-selected' : ''}`;
+        row.title = name;
+        row.textContent = name;
+        row.onclick = (ev) => {
+          ev.stopPropagation();
+          if (!checked) {
+            if (!selectedProjectSites.includes(name)) selectedProjectSites.push(name);
+          } else {
+            selectedProjectSites = selectedProjectSites.filter((n) => n !== name);
+          }
+          projectSiteSearchKeyword = '';
+          renderProjectSiteMulti();
+        };
+        drop.appendChild(row);
+      });
+    }
+
+    function toggleProjectSiteDropdown(show) {
+      const drop = $('projectSiteDropdown');
+      const wrap = $('projectSiteMultiWrap');
+      if (!drop) return;
+      projectSiteDropdownOpen = show;
+      if (!show) projectSiteSearchKeyword = '';
+      drop.style.display = show ? 'block' : 'none';
+      if (wrap) wrap.classList.toggle('is-dropdown-open', !!show);
+      const input = $('projectSiteSearchInput');
+      if (input) input.value = show ? projectSiteSearchKeyword : '';
+      if (show) {
+        populateProjectSitesForCustomer();
+        renderProjectSiteDropdown();
+        requestAnimationFrame(() => input?.focus());
+      }
+    }
+
+    function bindProjectSiteMultiUI() {
+      const box = $('projectSiteMultiBox');
+      if (!box || box.dataset.bound === '1') return;
+      box.dataset.bound = '1';
+      box.addEventListener('click', (e) => {
+        if (isAdhocQuoteType()) return;
+        e.stopPropagation();
+        if (e.target && e.target.id === 'projectSiteSearchInput') {
+          toggleProjectSiteDropdown(true);
+          return;
+        }
+        toggleProjectSiteDropdown(!projectSiteDropdownOpen);
+      });
+      const input = $('projectSiteSearchInput');
+      if (input && input.dataset.bound !== '1') {
+        input.dataset.bound = '1';
+        input.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleProjectSiteDropdown(true);
+        });
+        input.addEventListener('input', (e) => {
+          projectSiteSearchKeyword = e.target.value || '';
+          toggleProjectSiteDropdown(true);
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            toggleProjectSiteDropdown(false);
+          }
+        });
+      }
+      document.addEventListener('click', () => toggleProjectSiteDropdown(false));
+    }
+
+    function bindQuoteTitleAutoSync() {
+      const qt = $('quoteTitle');
+      if (qt && qt.dataset.bound !== '1') {
+        qt.dataset.bound = '1';
+        qt.addEventListener('input', () => { quoteTitleTouched = true; });
+      }
+      ['quoteStart', 'quoteEnd', 'customerName'].forEach((id) => {
+        const el = $(id);
+        if (!el || el.dataset.quoteTitleBound === '1') return;
+        el.dataset.quoteTitleBound = '1';
+        el.addEventListener('change', () => refreshQuoteTitle(false));
+        el.addEventListener('input', () => refreshQuoteTitle(false));
+      });
+    }
+
+    /** 与详情页 syncQuoteTypeCustomerProjectUI 一致：临客询价 → 手输客户/项目点；否则渠道→类型→客户/项目点多选 */
+    function syncQuoteTypeCustomerProjectUI() {
+      const adhoc = isAdhocQuoteType();
+      const customerMultiWrap = $('customerMultiWrap');
+      const selC = $('customerSelect');
+      const inpC = $('customerName');
+      const multiBox = $('projectSiteMultiBox');
+      const inpP = $('projectSiteName');
+      const lblC = $('customerLabelEl');
+      const lblP = $('projectSiteLabelEl');
+      if (!selC || !inpC || !multiBox || !inpP) return;
+
+      if (adhoc) {
+        if (customerMultiWrap && customerMultiWrap.style.display !== 'none') {
+          const names = selectedCustomerNames();
+          if (names.length) inpC.value = names[0];
+          if (selectedProjectSites.length) inpP.value = selectedProjectSites[0];
+        }
+        if (customerMultiWrap) customerMultiWrap.style.display = 'none';
+        inpC.style.display = '';
+        multiBox.style.display = 'none';
+        inpP.style.display = '';
+        if (lblC) lblC.setAttribute('for', 'customerName');
+        if (lblP) lblP.setAttribute('for', 'projectSiteName');
+      } else {
+        const prevCustText = (inpC.value || '').trim();
+        if (customerMultiWrap) customerMultiWrap.style.display = '';
+        inpC.style.display = 'none';
+        if (prevCustText) {
+          const hit = MOCK_CUSTOMERS.find((c) => c.name === prevCustText);
+          selectedCustomerIds = hit ? [hit.id] : [];
+        }
+        multiBox.style.display = '';
+        inpP.style.display = 'none';
+        if (lblC) lblC.setAttribute('for', 'customerSelect');
+        if (lblP) lblP.removeAttribute('for');
+        refreshCustomerHiddenOptions();
+        renderCustomerMulti();
+        populateProjectSitesForCustomer();
+        const pv = (inpP.value || '').trim();
+        if (pv && !selectedProjectSites.includes(pv)) selectedProjectSites = [pv];
+        inpP.value = '';
+      }
+      renderProjectSiteMulti();
+      syncCustomerChannelFieldState();
+      refreshQuoteTitle(false);
+      refreshSpecialCustomerBanner();
+    }
+
+    function getCustomerMetaById(id) {
+      return MOCK_CUSTOMERS.find((c) => c.id === id) || null;
+    }
+
+    function syncCustomerTypeFieldState() {
+      const ct = $('customerType');
+      if (!ct) return;
+      ct.disabled = false;
+      ct.setAttribute('title', '请先选择客户渠道，再选择客户类型');
+      populateCustomerTypeOptions(false);
+    }
+
+    function getWizardCustomerDisplayName() {
+      return getCustomerDisplayName();
+    }
+
+    function getWizardProjectSiteDisplay() {
+      if (isAdhocQuoteType()) return ($('projectSiteName')?.value || '').trim();
+      return selectedProjectSites.length ? selectedProjectSites.join('、') : '';
+    }
+
+    function bindDealerFromOp() {
+      const op = $('opCompany').value.trim();
+      const sel = $('dealerCompany');
+      if (!op) {
+        sel.innerHTML = '<option value="">请先选择运营公司</option>';
+        sel.value = '';
+        return;
+      }
+      const dealer = MOCK_OP_TO_DEALER[op];
+      if (!dealer) {
+        sel.innerHTML = '<option value="">无关联经销商</option>';
+        sel.value = '';
+        return;
+      }
+      sel.innerHTML = '';
+      const o = document.createElement('option');
+      o.value = dealer;
+      o.textContent = dealer;
+      sel.appendChild(o);
+      sel.value = dealer;
+    }
+
+    function normalizeCategoryState(cat) {
+      const st = categoryModeState[cat];
+      if (st && typeof st === 'object' && !Array.isArray(st) && 'mode' in st) {
+        return {
+          mode: String(st.mode || ''),
+          refCustomer: String(st.refCustomer || ''),
+          refWebsite: String(st.refWebsite || '')
+        };
+      }
+      if (Array.isArray(st)) {
+        return { mode: st[0] || '', refCustomer: '', refWebsite: '' };
+      }
+      return { mode: '', refCustomer: '', refWebsite: '' };
+    }
+
+    function fillRefCustomerSelect(sel) {
+      const op = $('opCompany').value.trim();
+      const prev = sel.value || '';
+      sel.innerHTML = '';
+      if (!op) {
+        sel.innerHTML = '<option value="">请先选择运营公司</option>';
+        return;
+      }
+      const list = MOCK_OP_TO_CUSTOMERS[op] || [];
+      sel.innerHTML = '<option value="">请选择参考客户</option>';
+      list.forEach((n) => {
+        const o = document.createElement('option');
+        o.value = n;
+        o.textContent = n;
+        sel.appendChild(o);
+      });
+      if (prev && [...sel.options].some((opt) => opt.value === prev)) sel.value = prev;
+    }
+
+    function fillRefWebsiteSelect(sel) {
+      const prev = sel.value || '';
+      sel.innerHTML = '';
+      const opts = [
+        { v: '', t: '请选择参考网站' },
+        { v: '农业农村部', t: '农业农村部官网 · 价格行情' },
+        { v: '新发地', t: '新发地市场行情' },
+        { v: '惠农网', t: '惠农网' },
+        { v: '一亩田', t: '一亩田' },
+        { v: '其他', t: '其他（上线后由主数据维护）' }
+      ];
+      opts.forEach(({ v, t }) => {
+        const o = document.createElement('option');
+        o.value = v;
+        o.textContent = t;
+        sel.appendChild(o);
+      });
+      if (prev && [...sel.options].some((opt) => opt.value === prev)) sel.value = prev;
+    }
+
+    function renderCategoryGrid() {
+      const grid = $('categoryGrid');
+      grid.innerHTML = '';
+      ALL_LV1.forEach((cat) => {
+        const lab = document.createElement('label');
+        lab.className = 'cat-item';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = cat;
+        cb.name = 'quoteCat';
+        cb.addEventListener('change', () => {
+          syncCategoryModeMatrix();
+        });
+        lab.appendChild(cb);
+        lab.appendChild(document.createTextNode(cat));
+        grid.appendChild(lab);
+      });
+    }
+
+    function saveCategoryModeStateFromDOM() {
+      const tbody = $('categoryModeTbody');
+      if (!tbody) return;
+      getSelectedCategories().forEach((cat) => {
+        const st = normalizeCategoryState(cat);
+        const radio = tbody.querySelector(`input.pm-mode-radio[data-cat="${cat}"]:checked`);
+        const mode = radio ? String(radio.value || '') : '';
+        st.mode = mode;
+        st.refCustomer = '';
+        st.refWebsite = '';
+        if (mode === '参考现客户价格') {
+          const selC = tbody.querySelector(`select.ref-cat-customer[data-cat="${cat}"]`);
+          if (selC) st.refCustomer = selC.value || '';
+        }
+        if (mode === '网站价格') {
+          const selW = tbody.querySelector(`select.ref-cat-website[data-cat="${cat}"]`);
+          if (selW) st.refWebsite = selW.value || '';
+        }
+        categoryModeState[cat] = st;
+      });
+    }
+
+    function buildRefInfoCell(cat, st) {
+      const td = document.createElement('td');
+      td.className = 'matrix-ref-cell';
+      const mode = st.mode || '';
+      if (mode === '参考现客户价格') {
+        const wrap = document.createElement('div');
+        wrap.className = 'matrix-ref-inner';
+        const lbl = document.createElement('span');
+        lbl.className = 'form-label req';
+        lbl.textContent = '参考客户';
+        const sel = document.createElement('select');
+        sel.className = 'form-select ref-cat-customer';
+        sel.setAttribute('data-cat', cat);
+        fillRefCustomerSelect(sel);
+        if (st.refCustomer) sel.value = st.refCustomer;
+        sel.addEventListener('change', () => {
+          const s = normalizeCategoryState(cat);
+          s.refCustomer = sel.value || '';
+          categoryModeState[cat] = s;
+        });
+        wrap.appendChild(lbl);
+        wrap.appendChild(sel);
+        td.appendChild(wrap);
+      } else if (mode === '网站价格') {
+        const wrap = document.createElement('div');
+        wrap.className = 'matrix-ref-inner';
+        const lbl = document.createElement('span');
+        lbl.className = 'form-label req';
+        lbl.textContent = '参考网站';
+        const sel = document.createElement('select');
+        sel.className = 'form-select ref-cat-website';
+        sel.setAttribute('data-cat', cat);
+        fillRefWebsiteSelect(sel);
+        if (st.refWebsite) sel.value = st.refWebsite;
+        sel.addEventListener('change', () => {
+          const s = normalizeCategoryState(cat);
+          s.refWebsite = sel.value || '';
+          categoryModeState[cat] = s;
+        });
+        wrap.appendChild(lbl);
+        wrap.appendChild(sel);
+        td.appendChild(wrap);
+      } else {
+        td.innerHTML = '<span class="muted">—</span>';
+      }
+      return td;
+    }
+
+    /** 品类 × 模式（每行单选）× 参考信息（在模式之后） */
+    function syncCategoryModeMatrix() {
+      saveCategoryModeStateFromDOM();
+      const tbody = $('categoryModeTbody');
+      if (!tbody) return;
+      const cats = getSelectedCategories();
+      cats.forEach((cat) => {
+        if (categoryModeState[cat] == null) categoryModeState[cat] = { mode: '', refCustomer: '', refWebsite: '' };
+        else categoryModeState[cat] = normalizeCategoryState(cat);
+      });
+      Object.keys(categoryModeState).forEach((k) => {
+        if (!cats.includes(k)) delete categoryModeState[k];
+      });
+
+      tbody.innerHTML = '';
+      if (!cats.length) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="6" class="muted" style="padding:16px;text-align:center;">请先在上方勾选至少一个报价品类。</td>';
+        tbody.appendChild(tr);
+        if (currentStep === 2) renderDetailTable();
+        return;
+      }
+
+      const dealer = ($('dealerCompany')?.value || '').trim();
+      const ct = ($('customerType')?.value || '').trim();
+      const groupName = (c) => 'pm_' + encodeURIComponent(c).replace(/%/g, '_');
+
+      cats.forEach((cat) => {
+        if (categoryModeState[cat] == null) categoryModeState[cat] = { mode: '', refCustomer: '', refWebsite: '' };
+        let st = normalizeCategoryState(cat);
+
+        const chipGroup = document.createElement('div');
+        chipGroup.className = 'radio-chip-group mode-chip-group';
+        chipGroup.setAttribute('role', 'radiogroup');
+        chipGroup.setAttribute('aria-label', cat + ' 采购基准价模式');
+        const gn = groupName(cat);
+        PURCHASE_MODE_OPTIONS.forEach((mode) => {
+          const lab = document.createElement('label');
+          lab.className = 'radio-chip';
+          const rb = document.createElement('input');
+          rb.type = 'radio';
+          rb.className = 'pm-mode-radio';
+          rb.setAttribute('data-cat', cat);
+          rb.name = gn;
+          rb.value = mode;
+          rb.checked = st.mode === mode;
+          rb.addEventListener('change', () => {
+            const s = normalizeCategoryState(cat);
+            s.mode = mode;
+            if (mode !== '参考现客户价格') s.refCustomer = '';
+            if (mode !== '网站价格') s.refWebsite = '';
+            categoryModeState[cat] = s;
+            syncCategoryModeMatrix();
+          });
+          lab.appendChild(rb);
+          lab.appendChild(document.createTextNode(mode));
+          chipGroup.appendChild(lab);
+        });
+
+        st = normalizeCategoryState(cat);
+        const mr = getMarginRuleFromSettings(cat);
+        const minFallback = formatMarginPctDisplay(mr, 'minMargin');
+        const maxFallback = formatMarginPctDisplay(mr, 'maxMargin');
+        const tdRef = buildRefInfoCell(cat, st);
+        const finalLines = buildScopeRenderLines(dealer, ct, cat);
+        const rowspan = finalLines.length;
+
+        finalLines.forEach((line, idx) => {
+          const tr = document.createElement('tr');
+          const scopeText = formatScopeDisplayText(line);
+          const cellMin = formatMarginPctDisplay(mr, 'minMargin');
+          const cellMax = formatMarginPctDisplay(mr, 'maxMargin');
+
+          if (idx === 0) {
+            const tdCat = document.createElement('td');
+            tdCat.className = 'matrix-cat-cell';
+            tdCat.rowSpan = rowspan;
+            tdCat.textContent = cat;
+
+            const tdScope = document.createElement('td');
+            tdScope.className = 'matrix-scope-cell cell-readonly';
+            tdScope.textContent = scopeText;
+
+            const tdModes = document.createElement('td');
+            tdModes.className = 'matrix-mode-cell';
+            tdModes.rowSpan = rowspan;
+            tdModes.appendChild(chipGroup);
+
+            const tdMin = document.createElement('td');
+            tdMin.className = 'matrix-margin-cell';
+            tdMin.style.textAlign = 'center';
+            tdMin.textContent = cellMin;
+
+            const tdMax = document.createElement('td');
+            tdMax.className = 'matrix-margin-cell';
+            tdMax.style.textAlign = 'center';
+            tdMax.textContent = cellMax;
+
+            tdRef.rowSpan = rowspan;
+
+            tr.appendChild(tdCat);
+            tr.appendChild(tdScope);
+            tr.appendChild(tdModes);
+            tr.appendChild(tdMin);
+            tr.appendChild(tdMax);
+            tr.appendChild(tdRef);
+          } else {
+            const tdScope = document.createElement('td');
+            tdScope.className = 'matrix-scope-cell cell-readonly';
+            tdScope.textContent = scopeText;
+
+            const tdMin = document.createElement('td');
+            tdMin.className = 'matrix-margin-cell';
+            tdMin.style.textAlign = 'center';
+            tdMin.textContent = cellMin;
+
+            const tdMax = document.createElement('td');
+            tdMax.className = 'matrix-margin-cell';
+            tdMax.style.textAlign = 'center';
+            tdMax.textContent = cellMax;
+
+            tr.appendChild(tdScope);
+            tr.appendChild(tdMin);
+            tr.appendChild(tdMax);
+          }
+          tbody.appendChild(tr);
+        });
+      });
+      if (currentStep === 2) renderDetailTable();
+    }
+
+    function getSelectedCategories() {
+      return Array.from(document.querySelectorAll('input[name="quoteCat"]:checked')).map((el) => el.value);
+    }
+
+    function textOfSelect(id) {
+      const el = $(id);
+      if (!el || el.selectedIndex < 0) return '';
+      const opt = el.options[el.selectedIndex];
+      return opt ? String(opt.textContent || '').trim() : '';
+    }
+
+    /** 进入第二步时同步第一步信息到折叠摘要（只读展示） */
+    function syncStep1Summary() {
+      const op = textOfSelect('opCompany');
+      const dealer = textOfSelect('dealerCompany');
+      const qt = textOfSelect('quoteType');
+      const ct = textOfSelect('customerType');
+      const ch = textOfSelect('customerChannel');
+      const cust = getWizardCustomerDisplayName();
+      const title = ($('quoteTitle')?.value || '').trim();
+      const proj = getWizardProjectSiteDisplay();
+      const s = $('quoteStart').value || '—';
+      const e = $('quoteEnd').value || '—';
+      $('sumOp').textContent = op || '—';
+      $('sumDealer').textContent = dealer || '—';
+      $('sumQuoteType').textContent = qt || '—';
+      $('sumCustomer').textContent = cust || '—';
+      $('sumQuoteTitle').textContent = title || '—';
+      $('sumProject').textContent = proj || '—';
+      $('sumCustomerChannel').textContent = ch || '—';
+      $('sumCustType').textContent = ct || '—';
+      $('sumStart').textContent = s;
+      $('sumEnd').textContent = e;
+      const line = [op, dealer, qt, cust, title, proj, ch, ct, s + '～' + e].filter(Boolean).join(' · ');
+      $('step1SummaryLine').textContent = line || '—';
+    }
+
+    function toggleStep1Fold() {
+      const fold = $('step1SummaryFold');
+      const head = $('step1FoldHead');
+      const nowCollapsed = fold.classList.toggle('collapsed');
+      const expanded = !nowCollapsed;
+      head.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      $('step1SummaryBody').setAttribute('aria-hidden', expanded ? 'false' : 'true');
+    }
+
+    function updateStepUI() {
+      document.querySelectorAll('.step-item').forEach((el) => {
+        const n = +el.dataset.step;
+        el.classList.remove('active', 'done');
+        if (n === currentStep) el.classList.add('active');
+        else if (n < currentStep) el.classList.add('done');
+      });
+      document.querySelectorAll('.step-panel').forEach((p) => p.classList.remove('active'));
+      $('panel' + currentStep).classList.add('active');
+
+      $('btnPrev').style.display = currentStep > 1 ? 'inline-flex' : 'none';
+      $('btnNext').style.display = currentStep === 1 ? 'inline-flex' : 'none';
+      $('btnFinish').style.display = currentStep === 2 ? 'inline-flex' : 'none';
+
+      if (currentStep === 2) {
+        syncStep1Summary();
+        syncCategoryModeMatrix();
+        renderDetailTable();
+        refreshDetailHint();
+      }
+    }
+
+    function validateStep1() {
+      if (!$('opCompany').value.trim()) return '请选择运营公司';
+      if (!$('dealerCompany').value.trim()) return '请选择经销商公司';
+      if (!$('quoteType').value.trim()) return '请选择报价类型';
+      const quoteTitle = ($('quoteTitle')?.value || '').trim();
+      if (!quoteTitle) return '报价标题为必填项';
+      if (quoteTitle.length > 200) return '报价标题不能超过200字';
+      if (!($('customerChannel').value || '').trim()) return '请选择客户渠道';
+      if (!$('customerType').value.trim()) return '请选择客户类型';
+      if (isAdhocQuoteType()) {
+        if (!($('customerName').value || '').trim()) return '请输入客户名称';
+      } else if (!selectedCustomerIds.length) {
+        return '请至少选择一个客户名称';
+      }
+      const s = $('quoteStart').value;
+      const e = $('quoteEnd').value;
+      if (!s || !e) return '请填写报价开始、结束日期';
+      if (e < s) return '报价结束日期不能早于开始日期';
+      return '';
+    }
+
+    function validateStep2() {
+      const cats = getSelectedCategories();
+      if (!cats.length) return '请至少勾选一个报价品类';
+      for (let i = 0; i < cats.length; i++) {
+        const cat = cats[i];
+        const st = normalizeCategoryState(cat);
+        if (!st.mode) return `品类「${cat}」请选择一种采购基准价模式`;
+        if (st.mode === '参考现客户价格' && !(st.refCustomer || '').trim()) {
+          return `品类「${cat}」为参考现客户价格时请选择参考客户`;
+        }
+        if (st.mode === '网站价格' && !(st.refWebsite || '').trim()) {
+          return `品类「${cat}」为网站价格时请选择参考网站信息`;
+        }
+      }
+      return '';
+    }
+
+    function goNext() {
+      if (currentStep !== 1) return;
+      const err = validateStep1();
+      if (err) return alert(err);
+      currentStep = 2;
+      updateStepUI();
+    }
+
+    function goPrev() {
+      if (currentStep > 1) {
+        currentStep--;
+        updateStepUI();
+      }
+    }
+
+    /** 品类矩阵中是否已为该一级分类配置采购基准价模式（有值则明细行只读并随矩阵同步） */
+    function matrixModeForCat1(cat1) {
+      const c = String(cat1 || '').trim();
+      if (!c) return '';
+      const st = normalizeCategoryState(c);
+      return String(st.mode || '').trim();
+    }
+
+    function syncDetailRowsPurchaseBenchmarkModeFromMatrix() {
+      detailRows.forEach((r) => {
+        const mm = matrixModeForCat1(r.cat1);
+        if (mm) r.purchaseBenchmarkMode = mm;
+      });
+    }
+
+    function buildDetailPurchaseModeCell(r, rowIndex) {
+      const mm = matrixModeForCat1(r.cat1);
+      if (mm) {
+        return `<td class="detail-purchase-mode-readonly" title="与上方「品类与采购基准价模式」一致，随矩阵变更自动更新">${escapeHtml(mm)}</td>`;
+      }
+      const v = String(r.purchaseBenchmarkMode || '').trim();
+      const opts = ['<option value="">请选择</option>'].concat(
+        PURCHASE_MODE_OPTIONS.map((m) => {
+          const sel = v === m ? ' selected' : '';
+          return `<option value="${escapeAttr(m)}"${sel}>${escapeHtml(m)}</option>`;
+        })
+      );
+      return `<td class="td-detail-input"><select class="form-select detail-purchase-mode-select" title="该品类未在矩阵中配置采购基准价模式时，可在此选择（与矩阵不强绑定）" onchange="onDetailRowPurchaseModeChange(${rowIndex}, this.value)">${opts.join('')}</select></td>`;
+    }
+
+    function onDetailRowPurchaseModeChange(rowIndex, value) {
+      const row = detailRows[rowIndex];
+      if (!row) return;
+      if (matrixModeForCat1(row.cat1)) return;
+      row.purchaseBenchmarkMode = value;
+      recalcRowPricing(row);
+      renderDetailTable();
+    }
+
+    function onDetailRowUnitChange(rowIndex, value) {
+      const row = detailRows[rowIndex];
+      if (!row) return;
+      row.unit = value;
+      renderDetailTable();
+    }
+
+    function normalizeForMatch(s) {
+      return String(s || '')
+        .toLowerCase()
+        .replace(/\s+/g, '');
+    }
+
+    /** 二元字符块 Dice 系数 → 0～100，用于名称/品牌/规格近似度（原型演示） */
+    function diceBigramSimilarity(a, b) {
+      a = normalizeForMatch(a);
+      b = normalizeForMatch(b);
+      if (!a && !b) return 100;
+      if (!a || !b) return 0;
+      if (a === b) return 100;
+      if (a.length < 2 || b.length < 2) {
+        return a.includes(b) || b.includes(a) ? 85 : 0;
+      }
+      const bigramsA = new Map();
+      for (let i = 0; i < a.length - 1; i++) {
+        const bg = a.slice(i, i + 2);
+        bigramsA.set(bg, (bigramsA.get(bg) || 0) + 1);
+      }
+      let intersection = 0;
+      for (let i = 0; i < b.length - 1; i++) {
+        const bg = b.slice(i, i + 2);
+        if (bigramsA.has(bg) && bigramsA.get(bg) > 0) {
+          intersection++;
+          bigramsA.set(bg, bigramsA.get(bg) - 1);
+        }
+      }
+      const denom = a.length - 1 + b.length - 1;
+      return denom ? Math.round((2 * intersection / denom) * 100) : 0;
+    }
+
+    /**
+     * 按「客户产品名称 + 品牌 + 规格」三维与标准产品主数据比对，取综合分最高的 5 条候选。
+     * 权重：名称 40% · 品牌 35% · 规格 25%（与业务可后续调整）。
+     */
+    function computeStdProductCandidates(custName, brand, spec) {
+      const W_NAME = 0.4;
+      const W_BRAND = 0.35;
+      const W_SPEC = 0.25;
+      const scored = MOCK_PRODUCTS.map((m) => {
+        const nameS = Math.max(
+          diceBigramSimilarity(custName, m.name || ''),
+          diceBigramSimilarity(custName, m.stdName || '')
+        );
+        const brandS = diceBigramSimilarity(brand, m.brand || '');
+        const specS = diceBigramSimilarity(spec, m.spec || '');
+        const overall = Math.round(nameS * W_NAME + brandS * W_BRAND + specS * W_SPEC);
+        const hint = `综合${overall.toFixed(1)}%（名称${nameS.toFixed(1)}% 品牌${brandS.toFixed(1)}% 规格${specS.toFixed(1)}%）`;
+        return {
+          code: m.code,
+          stdName: m.stdName || m.name,
+          overall,
+          namePct: nameS,
+          brandPct: brandS,
+          specPct: specS,
+          hint
+        };
+      });
+      scored.sort((x, y) => y.overall - x.overall);
+      return scored.slice(0, 5);
+    }
+
+    /** 弹窗内：候选按综合分由高到低排列，单选 */
+    function buildImportMatchRadiosHtmlForModal(candidates, selectedCode) {
+      const sorted = [...(candidates || [])].sort((a, b) => b.overall - a.overall);
+      return sorted
+        .map((c, idx) => {
+          const checked = c.code === selectedCode ? ' checked' : '';
+          const rank = idx + 1;
+          const overallText = Number.isFinite(Number(c.overall)) ? Number(c.overall).toFixed(1) : '—';
+          const codeText = String(c.code || '').trim() || '—';
+          const dim = c.fromBackend
+            ? ''
+            : `名称${Number.isFinite(Number(c.namePct)) ? Number(c.namePct).toFixed(1) : '—'}% 品牌${Number.isFinite(Number(c.brandPct)) ? Number(c.brandPct).toFixed(1) : '—'}% 规格${Number.isFinite(Number(c.specPct)) ? Number(c.specPct).toFixed(1) : '—'}%`;
+          return `
+            <label class="import-match-radio-row">
+              <input type="radio" name="importPickModalGroup" class="import-match-radio-input-modal" value="${escapeHtml(c.code)}"${checked} />
+              <span>
+                <span class="import-match-radio-meta">
+                  <span class="import-match-radio-meta-main">${rank}. ${escapeHtml(codeText)} - ${escapeHtml(c.stdName || '—')}</span>
+                  <span class="import-match-overall-pct">综合${overallText}%</span>
+                </span>
+                ${dim ? `<span class="import-match-radio-dim">${escapeHtml(dim)}</span>` : ''}
+              </span>
+            </label>
+          `;
+        })
+        .join('');
+    }
+
+    let importMatchEditRowIndex = -1;
+
+    function openImportMatchModal(rowIndex) {
+      const row = detailRows[rowIndex];
+      const list = row && (row.importMatchCandidates || row.matchCandidates);
+      if (!row || !list || !list.length) return;
+      importMatchEditRowIndex = rowIndex;
+      const sorted = [...list].sort((a, b) => b.overall - a.overall);
+      const sel = row.selectedStdCode || sorted[0].code;
+      $('importMatchModalIntro').textContent =
+        '客户产品：' +
+        (row.name || '—') +
+        ' · 品牌 ' +
+        (row.brand != null && String(row.brand).trim() !== '' ? String(row.brand) : '—') +
+        ' · 规格 ' +
+        (row.spec != null && String(row.spec).trim() !== '' ? String(row.spec) : '—');
+      $('importMatchModalRadioWrap').innerHTML = buildImportMatchRadiosHtmlForModal(list, sel);
+      $('importMatchModal').classList.add('show');
+    }
+
+    function closeImportMatchModal() {
+      $('importMatchModal').classList.remove('show');
+      importMatchEditRowIndex = -1;
+    }
+
+    async function confirmImportMatchModal() {
+      if (importMatchEditRowIndex < 0) return;
+      const wrap = $('importMatchModalRadioWrap');
+      const checked = wrap && wrap.querySelector('input.import-match-radio-input-modal:checked');
+      if (!checked) return alert('请选择标准产品');
+      await applyImportStdMatch(importMatchEditRowIndex, checked.value);
+      closeImportMatchModal();
+    }
+
+    /** 与详情页「毛利区间」展示一致（规则命中时） */
+    function formatMarginRangeText(rule) {
+      if (!rule) return '—';
+      const a = formatMarginPctDisplay(rule, 'minMargin');
+      const b = formatMarginPctDisplay(rule, 'maxMargin');
+      if (a === '—' || b === '—') return '—';
+      return `${a}%～${b}%`;
+    }
+
+    /** 与详情页销售参考价区间口径一致：采购基准价×(1+毛利下限)～×(1+毛利上限)（原型） */
+    function formatSalesRefRangePreview(rule, purchaseRefNum) {
+      if (!rule || purchaseRefNum == null || !Number.isFinite(Number(purchaseRefNum))) return '—';
+      const pr = Number(purchaseRefNum);
+      const lo = Number(rule.minMargin);
+      const hi = Number(rule.maxMargin);
+      if (!Number.isFinite(lo) || !Number.isFinite(hi)) return '—';
+      const a = (pr * (1 + lo / 100)).toFixed(2);
+      const b = (pr * (1 + hi / 100)).toFixed(2);
+      return `${a}～${b}`;
+    }
+
+    function calcPurchaseBaseByMode(row) {
+      const mkt = Number(row && row.market);
+      const last = Number(row && row.lastSalesPrice);
+      if (!Number.isFinite(mkt) && !Number.isFinite(last)) return null;
+      const mode = String((row && row.purchaseBenchmarkMode) || '').trim();
+      if (mode === '参考现客户价格') {
+        if (Number.isFinite(last)) return last * 0.95;
+        return Number.isFinite(mkt) ? mkt * 0.98 : null;
+      }
+      if (mode === '网站价格') return Number.isFinite(mkt) ? mkt * 1.0 : null;
+      if (mode === '采购价格(有效且最低)') return Number.isFinite(mkt) ? mkt * 0.92 : null;
+      return Number.isFinite(mkt) ? mkt * 0.98 : null;
+    }
+
+    function renderPriceTrendHtml(row) {
+      const sc = Number(row && row.salesConfirm);
+      const last = Number(row && row.lastSalesPrice);
+      if (!Number.isFinite(sc) || !Number.isFinite(last) || last <= 0) return '<span class="trend-flat">-</span>';
+      if (sc > last) return '<span class="trend-up">↑ 增长</span>';
+      if (sc < last) return '<span class="trend-down">↓ 降低</span>';
+      return '<span class="trend-flat">→ 持平</span>';
+    }
+
+    function parsePctToNumber(v) {
+      const s = String(v == null ? '' : v).trim();
+      if (!s) return NaN;
+      const n = Number(s.replace('%', ''));
+      return Number.isFinite(n) ? n : NaN;
+    }
+
+    function getConfirmMarginWarnInfo(rule, confirmSalesMargin) {
+      if (!rule) return { cls: '', tip: '' };
+      const cur = parsePctToNumber(confirmSalesMargin);
+      const lo = Number(rule.minMargin);
+      const hi = Number(rule.maxMargin);
+      if (!Number.isFinite(cur) || !Number.isFinite(lo) || !Number.isFinite(hi)) return { cls: '', tip: '' };
+      if (cur < lo) {
+        return { cls: 'margin-warn-low', tip: `确认销售毛利 ${cur.toFixed(2)}% 低于最低毛利 ${lo}%` };
+      }
+      if (cur > hi) {
+        return { cls: 'margin-warn-high', tip: `确认销售毛利 ${cur.toFixed(2)}% 高于最高毛利 ${hi}%` };
+      }
+      return { cls: '', tip: '' };
+    }
+
+    function displayStdProductCode(r) {
+      if (r.selectedStdCode) return String(r.selectedStdCode);
+      const c = String(r.code || '').trim();
+      return c || '—';
+    }
+
+    function renderDetailTable() {
+      syncDetailRowsPurchaseBenchmarkModeFromMatrix();
+      const tb = $('detailTbody');
+      tb.innerHTML = '';
+      detailRows.forEach((r, i) => {
+        if (!r._rowKey) r._rowKey = 'rk_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 8);
+        syncIsYihaiFromProduct(r);
+        recalcRowPricing(r);
+        const rule = getMarginRuleFromSettings(r.cat1);
+        const tr = document.createElement('tr');
+        const purchaseRefNum = toNum(r.purchaseBase);
+        const baseHint = purchaseRefNum != null ? purchaseRefNum.toFixed(2) : '—';
+        const marginRangeText = formatMarginRangeText(rule);
+        const salesRefRange = formatSalesRefRangePreview(rule, purchaseRefNum);
+
+        const candList = r.importMatchCandidates || r.matchCandidates;
+        let stdNameCell;
+        let simCell;
+        if (candList && candList.length) {
+          const sorted = [...candList].sort((a, b) => b.overall - a.overall);
+          const top1 = sorted[0];
+          const stdDisp =
+            r.stdName != null && String(r.stdName).trim() !== ''
+              ? String(r.stdName).trim()
+              : String(top1.stdName || '');
+          stdNameCell = `<td title="当前选用的标准产品名称（可在「匹配相似度」弹窗中调整）">${escapeHtml(stdDisp)}</td>`;
+          const overallText = Number.isFinite(Number(top1.overall)) ? Number(top1.overall).toFixed(1) : '—';
+          const topDim = top1.fromBackend
+            ? ''
+            : `名称${Number.isFinite(Number(top1.namePct)) ? Number(top1.namePct).toFixed(1) : '—'}% 品牌${Number.isFinite(Number(top1.brandPct)) ? Number(top1.brandPct).toFixed(1) : '—'}% 规格${Number.isFinite(Number(top1.specPct)) ? Number(top1.specPct).toFixed(1) : '—'}%`;
+          simCell = `<td class="cell-wrap import-match-sim-col" title="列表展示综合相似度最高的推荐；点击可修改">
+            <div class="import-match-preview">
+              <div class="import-match-preview-title">
+                <span class="import-match-preview-product">推荐：${escapeHtml(String(top1.code || '').trim() || '—')} - ${escapeHtml(top1.stdName || '—')}</span>
+              </div>
+              <div class="import-match-action-row">
+                <span class="import-match-overall-pct">综合${overallText}%</span>
+                <button type="button" class="import-match-adjust-btn" data-row-index="${i}">调整匹配</button>
+              </div>
+              ${topDim ? `<div class="import-match-preview-dim">${escapeHtml(topDim)}</div>` : ''}
+            </div>
+          </td>`;
+        } else {
+          const stdDisp =
+            r.stdName != null && String(r.stdName).trim() !== ''
+              ? String(r.stdName).trim()
+              : String(r.name || '');
+          stdNameCell = `<td>${escapeHtml(stdDisp)}</td>`;
+          simCell = `<td class="muted" title="导入匹配确认时记录">${escapeHtml(r.matchHint || '—')}</td>`;
+        }
+
+        const custBrandCol =
+          r.customerBrand != null && String(r.customerBrand).trim() !== ''
+            ? escapeHtml(String(r.customerBrand).trim())
+            : '—';
+        const custSpecCol =
+          r.customerSpec != null && String(r.customerSpec).trim() !== ''
+            ? escapeHtml(String(r.customerSpec).trim())
+            : '—';
+
+        const custName = escapeAttr(r.name ?? '');
+        const sf = escapeAttr(r.salesForecast ?? '');
+        const mk = escapeAttr(r.markupRate ?? '');
+        const pc = escapeAttr(r.purchaseConfirm ?? '');
+        const sc = escapeAttr(r.salesConfirm ?? '');
+        const cm = escapeAttr(r.confirmSalesMargin ?? '');
+        const warn = getConfirmMarginWarnInfo(rule, r.confirmSalesMargin);
+        const unitVal = String(r.unit || '').trim();
+        const unitOpts = ['<option value="">请选择</option>'].concat(
+          UNIT_OPTIONS.map((u) => {
+            const sel = unitVal === u ? ' selected' : '';
+            return `<option value="${escapeAttr(u)}"${sel}>${escapeHtml(u)}</option>`;
+          })
+        );
+
+        tr.innerHTML = `
+          <td style="text-align:center;"><input type="checkbox" ${selectedDetailRowKeys.has(r._rowKey) ? 'checked' : ''} onchange="toggleDetailRowSelect('${escapeAttr(r._rowKey)}', this.checked)" /></td>
+          <td style="text-align:center;">${i + 1}</td>
+          <td class="td-detail-input td-detail-name"><input type="text" class="detail-cell-input detail-text-left" maxlength="200" value="${custName}" title="客户产品名称（可空）" oninput="onDetailRowFieldInput(${i}, 'name', this.value)" /></td>
+          <td>${custBrandCol}</td>
+          <td>${custSpecCol}</td>
+          ${stdNameCell}
+          <td>${escapeHtml(displayStdProductCode(r))}</td>
+          <td style="text-align:center;">${escapeHtml(formatIsYihaiCell(r))}</td>
+          <td>${escapeHtml(r.brand)}</td>
+          <td>${escapeHtml(r.spec)}</td>
+          ${simCell}
+          <td>${r.cat1 ? escapeHtml(r.cat1) : '—'}</td>
+          <td class="td-detail-input"><select class="form-select" title="单位：默认取产品外包装单位，可下拉调整" onchange="onDetailRowUnitChange(${i}, this.value)">${unitOpts.join('')}</select></td>
+          ${buildCollabModeCell(r, i)}
+          ${buildDetailPurchaseModeCell(r, i)}
+          <td style="text-align:right;">${r.market != null ? r.market.toFixed(2) : '—'}</td>
+          <td style="text-align:right;">${baseHint}</td>
+          <td class="matrix-margin-cell">${escapeHtml(marginRangeText)}</td>
+          <td style="white-space:nowrap;">${escapeHtml(salesRefRange)}</td>
+          <td class="td-detail-input"><input type="text" class="detail-cell-input" inputmode="decimal" maxlength="24" value="${sf}" title="销量预估" oninput="onDetailRowFieldInput(${i}, 'salesForecast', this.value)" /></td>
+          <td class="td-detail-input"><input type="text" class="detail-cell-input" data-row-index="${i}" data-row-field="markupRate" inputmode="decimal" maxlength="24" value="${mk}" title="加价幅度（采购确认价=采购基准价+加价幅度）" oninput="onDetailRowFieldInput(${i}, 'markupRate', this.value)" /></td>
+          <td style="text-align:right;">${escapeHtml(r.lastSalesPrice != null && String(r.lastSalesPrice) !== '' ? Number(r.lastSalesPrice).toFixed(2) : '—')}</td>
+          <td class="td-detail-input"><input type="text" class="detail-cell-input" inputmode="decimal" maxlength="24" value="${pc}" title="自动：采购基准价+加价幅度" readonly /></td>
+          <td class="td-detail-input"><input type="text" class="detail-cell-input" data-row-index="${i}" data-row-field="salesConfirm" inputmode="decimal" maxlength="24" value="${sc}" title="销售确认价（可手工调整）" oninput="onDetailRowFieldInput(${i}, 'salesConfirm', this.value)" /></td>
+          <td class="td-detail-input"><input type="text" class="detail-cell-input ${warn.cls}" inputmode="decimal" maxlength="24" value="${cm}" title="${escapeAttr(warn.tip || '只读： (销售确认价-采购确认价)/销售确认价')}" readonly /></td>
+          <td style="text-align:center;">${renderPriceTrendHtml(r)}</td>
+        `;
+        tb.appendChild(tr);
+      });
+      syncDetailSelectAllState();
+      refreshMarginSummary();
+    }
+
+    function toggleDetailRowSelect(rowKey, checked) {
+      if (!rowKey) return;
+      if (checked) selectedDetailRowKeys.add(rowKey);
+      else selectedDetailRowKeys.delete(rowKey);
+      syncDetailSelectAllState();
+    }
+
+    function toggleSelectAllDetailRows(checked) {
+      selectedDetailRowKeys.clear();
+      if (checked) {
+        detailRows.forEach((r) => {
+          if (r._rowKey) selectedDetailRowKeys.add(r._rowKey);
+        });
+      }
+      renderDetailTable();
+    }
+
+    function syncDetailSelectAllState() {
+      const all = $('detailSelectAll');
+      if (!all) return;
+      if (!detailRows.length) {
+        all.checked = false;
+        all.indeterminate = false;
+        return;
+      }
+      const checkedCount = detailRows.reduce((n, r) => n + (selectedDetailRowKeys.has(r._rowKey) ? 1 : 0), 0);
+      all.checked = checkedCount > 0 && checkedCount === detailRows.length;
+      all.indeterminate = checkedCount > 0 && checkedCount < detailRows.length;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function escapeAttr(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
+    }
+
+    function toNum(v) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function calcLastSalesPriceByProduct(p) {
+      const ls = Number(p && p.lastSalesPrice);
+      if (Number.isFinite(ls)) return ls.toFixed(2);
+      const m = Number(p && p.market);
+      if (Number.isFinite(m)) return (m * 1.02).toFixed(2);
+      return '';
+    }
+
+    function formatIsYihaiCell(row) {
+      if (row.isYihai === true) return '是';
+      if (row.isYihai === false) return '否';
+      return '—';
+    }
+
+    function syncIsYihaiFromProduct(row) {
+      if (!row) return;
+      const code = String(row.code || '').trim();
+      if (code) {
+        const p = MOCK_PRODUCTS.find((x) => x.code === code);
+        if (p) {
+          row.isYihai = !!p.isYihai;
+          return;
+        }
+      }
+      if (row.isYihai == null && row.stdName) {
+        const hit = MOCK_PRODUCTS.find((x) => x.stdName === row.stdName || x.name === row.stdName);
+        if (hit) row.isYihai = !!hit.isYihai;
+      }
+    }
+
+    function formatRatePercent(rate) {
+      if (rate == null || !Number.isFinite(rate)) return '—';
+      return (rate * 100).toFixed(2) + '%';
+    }
+
+    function isSalesConfirmLocked(row) {
+      const sc = toNum(row.salesConfirm);
+      return sc != null && sc !== 0;
+    }
+
+    function aggregateConfirmGrossMarginRate(rows, predicate) {
+      let sumSales = 0;
+      let sumPurchase = 0;
+      (rows || []).forEach((r) => {
+        if (predicate && !predicate(r)) return;
+        const sales = toNum(r.salesConfirm);
+        const purchase = toNum(r.purchaseConfirm);
+        if (sales == null || purchase == null || sales <= 0) return;
+        sumSales += sales;
+        sumPurchase += purchase;
+      });
+      if (sumSales <= 0) return null;
+      const rate = (sumSales - sumPurchase) / sumSales;
+      return Number.isFinite(rate) ? rate : null;
+    }
+
+    function refreshMarginSummary() {
+      const set = (id, rate) => {
+        const el = $(id);
+        if (el) el.textContent = rate == null ? '—' : formatRatePercent(rate);
+      };
+      const collab = (r) => String(r.collabMode || '').trim();
+      set('marginSummaryYihaiDirect', aggregateConfirmGrossMarginRate(detailRows, (r) => !!r.isYihai && collab(r) === '供应商直送'));
+      set('marginSummaryYihaiWarehouse', aggregateConfirmGrossMarginRate(detailRows, (r) => !!r.isYihai && collab(r) === '大仓配送'));
+      set('marginSummaryNonYihaiDirect', aggregateConfirmGrossMarginRate(detailRows, (r) => !r.isYihai && collab(r) === '供应商直送'));
+      set('marginSummaryNonYihaiWarehouse', aggregateConfirmGrossMarginRate(detailRows, (r) => !r.isYihai && collab(r) === '大仓配送'));
+      set('marginSummaryTotal', aggregateConfirmGrossMarginRate(detailRows, null));
+    }
+
+    function buildCollabModeCell(r, rowIndex) {
+      const v = String(r.collabMode || '').trim();
+      const opts = ['<option value="">—</option>'].concat(
+        IMPORT_COLLAB_MODES.map((m) => {
+          const sel = v === m ? ' selected' : '';
+          return `<option value="${escapeAttr(m)}"${sel}>${escapeHtml(m)}</option>`;
+        })
+      );
+      return `<td class="td-detail-input"><select class="form-select" title="协作模式：大仓配送 / 供应商直送" onchange="onDetailCollabModeChange(${rowIndex}, this.value)">${opts.join('')}</select></td>`;
+    }
+
+    function onDetailCollabModeChange(rowIndex, value) {
+      const row = detailRows[rowIndex];
+      if (!row) return;
+      const mode = String(value || '').trim();
+      if (mode && !IMPORT_COLLAB_MODES.includes(mode)) return alert('协作模式仅允许：大仓配送、供应商直送');
+      row.collabMode = mode;
+      refreshMarginSummary();
+    }
+
+    function applyImportLineExtendedFields(row, line) {
+      const mode = String(line.collabMode || '').trim();
+      if (mode) {
+        if (!IMPORT_COLLAB_MODES.includes(mode)) throw new Error('协作模式仅允许：大仓配送、供应商直送');
+        row.collabMode = mode;
+      }
+    }
+
+    function recalcRowPricing(row) {
+      if (!row) return;
+      const purchaseRef = toNum(calcPurchaseBaseByMode(row));
+      row.purchaseBase = purchaseRef != null ? purchaseRef.toFixed(2) : '';
+      const markup = toNum(row.markupRate);
+      if (!row.purchaseConfirmTouched && purchaseRef != null) {
+        const plus = Number.isFinite(markup) ? markup : 0;
+        row.purchaseConfirm = (purchaseRef + plus).toFixed(2);
+      } else if (!row.purchaseConfirmTouched) {
+        row.purchaseConfirm = '';
+      }
+      const pcNum = toNum(row.purchaseConfirm);
+      const rule = getMarginRuleFromSettings(row.cat1);
+      const hi = rule ? Number(rule.maxMargin) : NaN;
+      const hiRatio = Number.isFinite(hi) ? hi / 100 : null;
+      if (!row.salesConfirmTouched && !isSalesConfirmLocked(row) && pcNum != null && hiRatio != null) {
+        row.salesConfirm = (pcNum * (1 + hiRatio)).toFixed(2);
+      } else if (!row.salesConfirmTouched && !isSalesConfirmLocked(row)) {
+        row.salesConfirm = '';
+      }
+      const scNum = toNum(row.salesConfirm);
+      if (pcNum != null && scNum != null && scNum !== 0) {
+        const m = (scNum - pcNum) / scNum;
+        row.confirmSalesMargin = (m * 100).toFixed(2) + '%';
+      } else {
+        row.confirmSalesMargin = '';
+      }
+    }
+
+    function rerenderDetailTableKeepScroll(keepFocusRow, keepFocusField) {
+      const pageY = window.scrollY || window.pageYOffset || 0;
+      const pageX = window.scrollX || window.pageXOffset || 0;
+      const tb = $('detailTbody');
+      const scroller = tb && tb.parentElement ? tb.parentElement : null;
+      const sl = scroller ? scroller.scrollLeft : 0;
+      const st = scroller ? scroller.scrollTop : 0;
+      renderDetailTable();
+      window.scrollTo(pageX, pageY);
+      if (scroller) {
+        scroller.scrollLeft = sl;
+        scroller.scrollTop = st;
+      }
+      if (Number.isFinite(keepFocusRow) && keepFocusField) {
+        const sel = `[data-row-index="${keepFocusRow}"][data-row-field="${keepFocusField}"]`;
+        const input = document.querySelector(sel);
+        if (input && typeof input.focus === 'function') {
+          input.focus({ preventScroll: true });
+          if (typeof input.value === 'string' && typeof input.setSelectionRange === 'function') {
+            const pos = input.value.length;
+            input.setSelectionRange(pos, pos);
+          }
+          if (scroller) {
+            scroller.scrollLeft = sl;
+            scroller.scrollTop = st;
+          }
+        }
+      }
+    }
+
+    function onDetailRowFieldInput(rowIndex, field, value) {
+      const row = detailRows[rowIndex];
+      if (!row) return;
+      row[field] = value;
+      if (field === 'purchaseConfirm') row.purchaseConfirmTouched = true;
+      if (field === 'salesConfirm') row.salesConfirmTouched = true;
+      if (field === 'markupRate' || field === 'purchaseConfirm' || field === 'salesConfirm' || field === 'purchaseBenchmarkMode') {
+        recalcRowPricing(row);
+        refreshMarginSummary();
+        rerenderDetailTableKeepScroll(rowIndex, field);
+      }
+    }
+
+    function addDetailRows(products) {
+      const codes = new Set(detailRows.map((r) => r.code));
+      const cb = ($('customerBrand')?.value || '').trim();
+      const cs = ($('customerSpec')?.value || '').trim();
+      products.forEach((p) => {
+        if (p.importPending) return;
+        if (!codes.has(p.code)) {
+          codes.add(p.code);
+          const mm = matrixModeForCat1(p.cat1);
+          detailRows.push({
+            ...p,
+            name: '',
+            customerBrand: cb,
+            customerSpec: cs,
+            unit: defaultOuterUnitFromProduct(p),
+            lastSalesPrice: calcLastSalesPriceByProduct(p),
+            salesForecast: '',
+            markupRate: '',
+            purchaseBase: '',
+            purchaseConfirm: '',
+            salesConfirm: '',
+            confirmSalesMargin: '',
+            purchaseConfirmTouched: false,
+            salesConfirmTouched: false,
+            purchaseBenchmarkMode: mm || '',
+            isYihai: p.isYihai,
+            collabMode: ''
+          });
+        }
+      });
+      renderDetailTable();
+    }
+
+    function getReferenceCustomerByCategoryFromMode() {
+      const pairs = [];
+      const cats = getSelectedCategories();
+      cats.forEach((cat) => {
+        const st = normalizeCategoryState(cat);
+        if (st.mode === '参考现客户价格' && String(st.refCustomer || '').trim()) {
+          pairs.push({
+            cat1: String(cat),
+            refCustomer: String(st.refCustomer).trim()
+          });
+        }
+      });
+      return pairs;
+    }
+
+    function buildProductFromReferenceQuoteLine(line) {
+      const std = MOCK_PRODUCTS.find((p) => p.code === line.code);
+      if (!std) return null;
+      return {
+        ...std,
+        name: String(line.customerName || ''),
+        customerBrand: String(line.customerBrand || std.brand || ''),
+        customerSpec: String(line.customerSpec || std.spec || ''),
+        salesForecast: String(line.salesForecast || ''),
+        markupRate: String(line.markupRate || '')
+      };
+    }
+
+    function loadRefCustomerProducts() {
+      const err = validateStep1() || validateStep2();
+      if (err) return alert(err);
+      const refCatPairs = getReferenceCustomerByCategoryFromMode();
+      if (!refCatPairs.length) {
+        return alert('请先在上方「品类与采购基准价模式」中选择「参考现客户价格」并填写参考客户');
+      }
+      const all = [];
+      refCatPairs.forEach(({ cat1, refCustomer }) => {
+        const list = REF_CUSTOMER_QUOTE_PRODUCTS[refCustomer] || [];
+        list.forEach((line) => {
+          const p = buildProductFromReferenceQuoteLine(line);
+          if (p && String(p.cat1 || '') === String(cat1)) all.push(p);
+        });
+      });
+      if (!all.length) {
+        return alert('未找到“参考客户 + 对应品类”的历史报价产品数据');
+      }
+      const codeSet = new Set(detailRows.map((r) => String(r.code || '').split('_imp_')[0]));
+      let added = 0;
+      all.forEach((p) => {
+        if (codeSet.has(p.code)) return;
+        codeSet.add(p.code);
+        const mm = matrixModeForCat1(p.cat1);
+        detailRows.push({
+          ...p,
+          code: p.code,
+          stdName: p.stdName || p.name || '',
+          customerBrand: p.customerBrand || '',
+          customerSpec: p.customerSpec || '',
+          unit: defaultOuterUnitFromProduct(p),
+          lastSalesPrice: calcLastSalesPriceByProduct(p),
+          purchaseBase: '',
+          purchaseConfirm: '',
+          salesConfirm: '',
+          confirmSalesMargin: '',
+          purchaseConfirmTouched: false,
+          salesConfirmTouched: false,
+          purchaseBenchmarkMode: mm || '',
+          isYihai: p.isYihai,
+          collabMode: ''
+        });
+        added++;
+      });
+      renderDetailTable();
+      refreshDetailHint();
+      if (!added) return alert('参考客户产品已全部存在于当前明细，无新增');
+      alert(`已从参考客户拉取并加载 ${added} 条报价产品到明细`);
+    }
+
+    function removeAllDetailRows() {
+      if (!detailRows.length) return alert('当前无可删除的明细行');
+      if (!selectedDetailRowKeys.size) return alert('请先勾选要删除的明细行');
+      const before = detailRows.length;
+      for (let i = detailRows.length - 1; i >= 0; i--) {
+        const r = detailRows[i];
+        if (r && selectedDetailRowKeys.has(r._rowKey)) detailRows.splice(i, 1);
+      }
+      const removed = before - detailRows.length;
+      if (!removed) return alert('未找到可删除的勾选明细行');
+      selectedDetailRowKeys.clear();
+      renderDetailTable();
+      refreshDetailHint();
+      alert(`已删除 ${removed} 条明细`);
+    }
+
+    function refreshDetailHint() {
+      const n = detailRows.length;
+      const pending = detailRows.filter((r) => r.importPending).length;
+      if (!n) {
+        $('detailHint').textContent = '请使用「从产品库选择」或「导入产品」加载明细。';
+        return;
+      }
+      $('detailHint').textContent = pending
+        ? `已加载 ${n} 条报价明细，其中 ${pending} 条导入行待确认标准产品（请点击「匹配相似度」列「调整匹配」）。`
+        : `已加载 ${n} 条报价明细，可继续选择或导入。`;
+    }
+
+    async function applyImportStdMatch(rowIndex, stdCode) {
+      const row = detailRows[rowIndex];
+      if (!row || !stdCode) return;
+      const list = row.matchCandidates || row.importMatchCandidates;
+      if (!list || !list.length) return;
+      const cand = list.find((c) => c.code === stdCode);
+      if (!cand) return;
+      row.importMatchCandidates = [...list].sort((a, b) => b.overall - a.overall);
+      row.matchCandidates = null;
+      row.importPending = false;
+      row.selectedStdCode = stdCode;
+      row.matchHint = cand.hint || '';
+      if (cand.fromBackend) {
+        row.code = cand.code + '_imp_' + rowIndex + '_' + Date.now();
+        row.stdName = cand.stdName || '';
+        row.cat1 = cand.cat1 || '';
+        row.unit = cand.unit || '';
+        row.isYihai = !!cand.isYihai;
+        row.brand = cand.brand || '';
+        row.spec = cand.spec || '';
+        row.market = null;
+        // 调用后端真实报价/采购查询，和 Demo 行为保持一致
+        let quoteFields = { unit: row.unit, lastSalesPrice: '', purchaseBase: '' };
+        if (row._taskId && row._itemIndex != null) {
+          try {
+            const res = await fetch(API_BASE_URL + '/api/select_alternative', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                task_id: row._taskId,
+                item_index: row._itemIndex,
+                selected_code: stdCode
+              })
+            });
+            const selData = await res.json();
+            if (res.ok && selData && selData.success) {
+              quoteFields = extractQuoteFields(selData.quote_info, selData.procurement_info, cand);
+            }
+          } catch (e) {
+            console.error('切换备选匹配查询价格失败', e);
+          }
+        }
+        row.unit = quoteFields.unit || row.unit;
+        row.lastSalesPrice = quoteFields.lastSalesPrice;
+        row.purchaseBase = quoteFields.purchaseBase;
+      } else {
+        const m = MOCK_PRODUCTS.find((p) => p.code === stdCode);
+        if (!m) return;
+        row.code = m.code + '_imp_' + rowIndex + '_' + Date.now();
+        row.stdName = m.stdName || m.name;
+        row.cat1 = m.cat1;
+        row.market = m.market;
+        row.unit = defaultOuterUnitFromProduct(m);
+        row.lastSalesPrice = calcLastSalesPriceByProduct(m);
+        row.isYihai = m.isYihai;
+      }
+      row.purchaseConfirmTouched = false;
+      row.salesConfirmTouched = false;
+      recalcRowPricing(row);
+      renderDetailTable();
+      refreshDetailHint();
+    }
+
+    function openProductPicker() {
+      const err = validateStep1() || validateStep2();
+      if (err) return alert('请完善后再选择产品：' + err);
+      const base = getProductPickerBaseList();
+
+      // 初始化弹窗查询条件（保留已选勾选状态）
+      $('pickStdNameInput').value = '';
+      $('pickStdCodeInput').value = '';
+      $('pickCat1Select').innerHTML = '<option value="">全部</option>';
+      Array.from(new Set(base.map((p) => p.cat1))).forEach((cat) => {
+        const o = document.createElement('option');
+        o.value = cat;
+        o.textContent = cat;
+        $('pickCat1Select').appendChild(o);
+      });
+
+      // 弹窗打开时默认勾选：已在下方明细中的产品
+      productPickSelectedCodes = new Set(detailRows.map((r) => r.code));
+
+      bindProductPickerFilterEvents();
+      renderProductPickTable();
+      $('pickerModal').classList.add('show');
+    }
+
+    function closeProductPicker() {
+      $('pickerModal').classList.remove('show');
+    }
+
+    function confirmProductPicker() {
+      const codes = Array.from(productPickSelectedCodes);
+      const picked = MOCK_PRODUCTS.filter((p) => codes.includes(p.code));
+      if (!picked.length) return alert('请勾选至少一个产品');
+      addDetailRows(picked);
+      refreshDetailHint();
+      closeProductPicker();
+    }
+
+    function getProductPickerBaseList() {
+      const cats = getSelectedCategories();
+      return MOCK_PRODUCTS.filter((p) => cats.includes(p.cat1));
+    }
+
+    function getProductPickerQueryValues() {
+      const cat1 = ($('pickCat1Select')?.value || '').trim();
+      const nameKw = ($('pickStdNameInput')?.value || '').trim();
+      const codeKw = ($('pickStdCodeInput')?.value || '').trim();
+      return { cat1, nameKw, codeKw };
+    }
+
+    function productMatchesQuery(p, q) {
+      if (q.cat1 && String(p.cat1 || '') !== q.cat1) return false;
+      if (q.nameKw) {
+        const s = `${p.stdName || ''} ${p.name || ''}`;
+        if (!String(s).includes(q.nameKw)) return false;
+      }
+      if (q.codeKw) {
+        if (!String(p.code || '').includes(q.codeKw)) return false;
+      }
+      return true;
+    }
+
+    function resetProductPickerFilters() {
+      const sel = $('pickCat1Select');
+      const nameIn = $('pickStdNameInput');
+      const codeIn = $('pickStdCodeInput');
+      if (sel) sel.value = '';
+      if (nameIn) nameIn.value = '';
+      if (codeIn) codeIn.value = '';
+      renderProductPickTable();
+    }
+
+    function renderProductPickTable() {
+      const tbody = $('productPickTbody');
+      if (!tbody) return;
+      const base = getProductPickerBaseList();
+      const q = getProductPickerQueryValues();
+      const list = base.filter((p) => productMatchesQuery(p, q));
+
+      const cntEl = $('pickerResultCount');
+      if (cntEl) cntEl.textContent = `共 ${list.length} 条`;
+
+      // 保持勾选状态：跨过滤条件不丢失
+      const prevChecked = new Set(productPickSelectedCodes);
+      tbody.innerHTML = '';
+      if (!list.length) {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td colspan="7" class="muted" style="padding:24px 16px;text-align:center;">暂无匹配产品，请调整筛选条件后查询</td>';
+        tbody.appendChild(tr);
+        return;
+      }
+
+      list.forEach((p) => {
+        const tr = document.createElement('tr');
+        const checked = prevChecked.has(p.code);
+        tr.innerHTML = `
+          <td style="text-align:center;">
+            <input type="checkbox" data-code="${escapeHtml(p.code)}" />
+          </td>
+          <td>${escapeHtml(p.cat1 || '')}</td>
+          <td>${escapeHtml(p.stdName || p.name || '')}</td>
+          <td>${escapeHtml(p.code || '')}</td>
+          <td>${escapeHtml(p.brand || '')}</td>
+          <td>${escapeHtml(p.spec || '')}</td>
+          <td style="text-align:center;">${p.isYihai ? '是' : '否'}</td>
+        `;
+        const cb = tr.querySelector('input[type="checkbox"]');
+        cb.checked = checked;
+        cb.addEventListener('change', () => {
+          if (cb.checked) productPickSelectedCodes.add(p.code);
+          else productPickSelectedCodes.delete(p.code);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function bindProductPickerFilterEvents() {
+      const sel = $('pickCat1Select');
+      const nameIn = $('pickStdNameInput');
+      const codeIn = $('pickStdCodeInput');
+      const btnQ = $('pickerBtnQuery');
+      const btnR = $('pickerBtnReset');
+      if (sel && sel.dataset.bound !== '1') {
+        sel.dataset.bound = '1';
+        sel.addEventListener('change', renderProductPickTable);
+      }
+      if (nameIn && nameIn.dataset.bound !== '1') {
+        nameIn.dataset.bound = '1';
+        nameIn.addEventListener('input', renderProductPickTable);
+        nameIn.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            renderProductPickTable();
+          }
+        });
+      }
+      if (codeIn && codeIn.dataset.bound !== '1') {
+        codeIn.dataset.bound = '1';
+        codeIn.addEventListener('input', renderProductPickTable);
+        codeIn.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            renderProductPickTable();
+          }
+        });
+      }
+      if (btnQ && btnQ.dataset.bound !== '1') {
+        btnQ.dataset.bound = '1';
+        btnQ.addEventListener('click', () => renderProductPickTable());
+      }
+      if (btnR && btnR.dataset.bound !== '1') {
+        btnR.dataset.bound = '1';
+        btnR.addEventListener('click', () => resetProductPickerFilters());
+      }
+    }
+
+
+    /** 将后端匹配候选转换为前端所需的候选格式 */
+    function mapBackendCandidateToFrontend(cand) {
+      if (!cand) return null;
+      const conf = Number.isFinite(cand.confidence) ? cand.confidence : 0;
+      const overall = Math.round(conf * 1000) / 10; // 保留一位小数
+      // 兼容后端可能返回的不同字段名
+      const code = String(
+        cand.product_code || cand.code || cand.standard_product_code || cand.std_code || ''
+      );
+      const stdName = String(
+        cand.product_name || cand.name || cand.standard_product_name || cand.std_name || ''
+      );
+      if (!code && !stdName) return null; // 无效候选
+      return {
+        code: code,
+        stdName: stdName,
+        overall: overall,
+        namePct: overall,
+        brandPct: overall,
+        specPct: overall,
+        fromBackend: true,
+        cat1: String(cand.cat1 || ''),
+        unit: String(cand.unit || ''),
+        isYihai: String(cand.is_yihai || '') === '是',
+        brand: String(cand.brand || cand.detected_brand || ''),
+        spec: String(cand.spec || cand.normalized_spec || ''),
+        hint: `综合${overall.toFixed(1)}%（置信度 ${(conf * 100).toFixed(1)}%）`
+      };
+    }
+
+    /** 从后端报价/采购信息中提取前端需要的字段 */
+    function extractQuoteFields(quote, procurement, topMatch) {
+      const unit = quote && quote.unit ? String(quote.unit) : (topMatch && topMatch.unit ? String(topMatch.unit) : '');
+      const lastSalesPrice = quote && Number.isFinite(quote.unit_price) ? Number(quote.unit_price).toFixed(2) : '';
+      // 采购基准价优先取报价数据中的采购价，缺失时回退到采购数据中的协议采购价
+      let purchaseBase = '';
+      if (quote && Number.isFinite(quote.purchase_price)) {
+        purchaseBase = Number(quote.purchase_price).toFixed(2);
+      } else if (procurement && Number.isFinite(procurement.procurement_price)) {
+        purchaseBase = Number(procurement.procurement_price).toFixed(2);
+      }
+      return { unit, lastSalesPrice, purchaseBase };
+    }
+
+    /** 先校验第一步、第二步必填与矩阵，再打开文件选择（避免选完文件才提示） */
+    function onImportProductClick() {
+      const err = validateStep1() || validateStep2();
+      if (err) return alert(err);
+      const input = $('importFile');
+      if (input) input.click();
+    }
+
+    function setUploadLoading(show, text, sub) {
+      const area = $('quoteUploadArea');
+      const loadingText = $('quoteUploadLoadingText');
+      const loadingSub = $('quoteUploadLoadingSub');
+      if (area) area.classList.toggle('uploading', !!show);
+      if (loadingText && text) loadingText.textContent = text;
+      if (loadingSub && sub) loadingSub.textContent = sub;
+    }
+
+    async function onImportFile(input) {
+      if (!input.files || !input.files[0]) return;
+      if ($('quoteUploadArea') && $('quoteUploadArea').classList.contains('uploading')) return;
+      const file = input.files[0];
+      const customerName = getWizardCustomerDisplayName() || '';
+
+      // 进入上传/处理状态，禁用重复提交
+      setUploadLoading(true, '正在上传文件，请稍候…', '大文件可能需要 10-30 秒');
+
+      const form = new FormData();
+      form.append('file', file);
+      form.append('customer_name', customerName);
+      form.append('top_n', '10');
+
+      try {
+        setUploadLoading(true, '正在上传并识别客户报价单…', '上传完成后将自动对品并勾选报价品类');
+        const res = await fetch(API_BASE_URL + '/api/preprocess_match', {
+          method: 'POST',
+          body: form
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || ('上传失败：' + res.status));
+        }
+
+        setUploadLoading(true, '正在解析匹配结果并写入明细…', '即将完成');
+
+        const base = Date.now();
+        const startIdx = detailRows.length;
+        const rows = data.results || [];
+        const addedRows = [];
+
+        // 调试用：在控制台输出第一条匹配结果，便于排查
+        if (rows.length) {
+          console.log('[preprocess_match] first result:', rows[0]);
+        }
+
+        rows.forEach((item, i) => {
+          const top = item.top_match;
+          const alts = (item.alternatives || []).map(mapBackendCandidateToFrontend).filter(Boolean);
+          const topCand = mapBackendCandidateToFrontend(top);
+          const allCands = topCand ? [topCand].concat(alts.filter((a) => a.code !== topCand.code)) : alts;
+          const quoteFields = extractQuoteFields(item.quote, item.procurement, top);
+
+          // 优先使用 topCand 映射后的编码；若映射丢失则直接取后端原始 product_code
+          let realStdCode = topCand && topCand.code ? topCand.code : '';
+          if (!realStdCode && top && (top.product_code || top.code)) {
+            realStdCode = String(top.product_code || top.code || '');
+          }
+
+          detailRows.push({
+            code: 'IMP_' + base + '_' + i,
+            name: item.raw_name || '',
+            brand: top ? (top.brand || top.detected_brand || '') : '',
+            spec: top ? (top.spec || top.normalized_spec || '') : '',
+            customerBrand: '',
+            customerSpec: '',
+            stdName: top ? (top.product_name || top.name || '') : '',
+            cat1: top ? (top.cat1 || '') : '',
+            market: null,
+            lastSalesPrice: quoteFields.lastSalesPrice,
+            importPending: false,
+            importMatchCandidates: allCands,
+            matchCandidates: null,
+            selectedStdCode: realStdCode,
+            matchHint: topCand ? topCand.hint : '未匹配',
+            unit: quoteFields.unit,
+            isYihai: top ? String(top.is_yihai || '') === '是' : false,
+            salesForecast: '',
+            markupRate: '',
+            purchaseBase: quoteFields.purchaseBase,
+            purchaseConfirm: '',
+            salesConfirm: '',
+            confirmSalesMargin: '',
+            purchaseConfirmTouched: false,
+            salesConfirmTouched: false,
+            purchaseBenchmarkMode: '',
+            _taskId: data.task_id || '',
+            _itemIndex: item.index != null ? item.index : i
+          });
+          addedRows.push(detailRows[detailRows.length - 1]);
+        });
+
+        // product_match 集成：根据匹配结果的 cat1 自动勾选报价品类
+        const matchedCat1Set = new Set();
+        rows.forEach((item) => {
+          const c = item.top_match && item.top_match.cat1;
+          if (c) matchedCat1Set.add(String(c));
+        });
+        const catsToCheck = new Set();
+        matchedCat1Set.forEach((c) => {
+          const lv1 = CAT1_TO_LV1[c];
+          if (lv1) catsToCheck.add(lv1);
+        });
+        if (catsToCheck.size) {
+          document.querySelectorAll('input[name="quoteCat"]').forEach((cb) => {
+            if (catsToCheck.has(cb.value) && !cb.checked) {
+              cb.checked = true;
+            }
+          });
+          syncCategoryModeMatrix();
+          // 为本次新勾选的品类设置默认采购基准价模式
+          catsToCheck.forEach((cat) => {
+            const st = normalizeCategoryState(cat);
+            if (!st.mode) {
+              st.mode = '采购价格(有效且最低)';
+              categoryModeState[cat] = st;
+              // 直接勾选矩阵中的默认模式单选框，避免再次 sync 覆盖
+              const gn = 'pm_' + encodeURIComponent(cat).replace(/%/g, '_');
+              const radio = document.querySelector('input[type="radio"][name="' + gn + '"][value="采购价格(有效且最低)"]');
+              if (radio) radio.checked = true;
+            }
+          });
+        }
+
+        // 触发重计算并刷新
+        addedRows.forEach((r) => recalcRowPricing(r));
+        input.value = '';
+        renderDetailTable();
+        refreshDetailHint();
+
+        // 在第一步上传区展示已上传文件名
+        const fileNameEl = $('quoteUploadFileName');
+        const fileWrap = $('quoteUploadFile');
+        if (fileNameEl && fileWrap) {
+          fileNameEl.textContent = file.name;
+          fileWrap.style.display = 'flex';
+        }
+
+        const specialHint = data.is_special ? `（已识别为${data.special_label}特殊客户，使用对应预处理规则）` : '';
+        alert(`导入完成${specialHint}：已新增 ${rows.length} 条明细，已自动勾选 ${catsToCheck.size} 个报价品类`);
+      } catch (err) {
+        input.value = '';
+        alert('导入失败：' + (err.message || String(err)));
+      } finally {
+        setUploadLoading(false);
+      }
+    }
+
+
+    function goCancel() {
+      const listForIndex = '../../requirements/销售管理/报价申请/PRD.Quote-Request-List.html';
+      const listForSelf = 'PRD.Quote-Request-List.html';
+      if (window.parent && window.parent !== window && typeof window.parent.openTab === 'function') {
+        window.parent.openTab('报价申请列表', listForIndex);
+        return;
+      }
+      window.location.href = listForSelf;
+    }
+
+    function navigateToDetail(queryString) {
+      const detailForIndex = '../../requirements/销售管理/报价申请/PRD.Quote-Request-Detail.html?' + queryString;
+      const detailForSelf = 'PRD.Quote-Request-Detail.html?' + queryString;
+      const title = '报价申请';
+      if (window.parent && window.parent !== window && typeof window.parent.openTab === 'function') {
+        window.parent.openTab(title, detailForIndex);
+        return;
+      }
+      window.location.href = detailForSelf;
+    }
+
+    function goFinish() {
+      if (detailRows.some((r) => r.importPending)) {
+        return alert('存在未确认标准产品的导入行，请点击「匹配相似度」列「调整匹配」并在弹窗中确定后再进入详情页');
+      }
+      if (!detailRows.length) {
+        if (!confirm('尚未加载产品明细，仍要进入完整详情页吗？')) return;
+      }
+      const q = new URLSearchParams();
+      q.set('from', 'wizard');
+      q.set('op', $('opCompany').value);
+      q.set('dealer', $('dealerCompany').value);
+      q.set('quoteType', $('quoteType').value);
+      q.set('customerType', $('customerType').value);
+      q.set('start', $('quoteStart').value);
+      q.set('end', $('quoteEnd').value);
+      const generatedId = 'BA' + String(Date.now()).slice(-10);
+      q.set('id', generatedId);
+      const modeMap = {};
+      getSelectedCategories().forEach((cat) => {
+        modeMap[cat] = normalizeCategoryState(cat);
+      });
+      q.set('categoryModes', encodeURIComponent(JSON.stringify(modeMap)));
+      q.set('customerName', getWizardCustomerDisplayName());
+      q.set('quoteTitle', ($('quoteTitle')?.value || '').trim());
+      q.set('customerChannel', ($('customerChannel')?.value || '').trim());
+      const ps = getWizardProjectSiteDisplay();
+      if (ps) q.set('projectSite', ps);
+      if (!isAdhocQuoteType() && selectedCustomerIds.length) {
+        q.set('customerIds', encodeURIComponent(JSON.stringify(selectedCustomerIds)));
+      }
+      if (!isAdhocQuoteType() && selectedProjectSites.length) {
+        q.set('projectSiteNames', encodeURIComponent(JSON.stringify(selectedProjectSites)));
+      }
+      try {
+        const buildMatchHint = (row) => {
+          const cands = Array.isArray(row && row.matchCandidates) ? row.matchCandidates : [];
+          if (!cands.length) return '';
+          const chosenCode = String((row && row.code) || '');
+          let chosen = cands.find((c) => String(c && c.code) === chosenCode);
+          if (!chosen) chosen = cands[0];
+          const score = Number(chosen && chosen.score);
+          if (!Number.isFinite(score)) return '';
+          return `综合相似度 ${(score * 100).toFixed(1)}%`;
+        };
+        const detailSeedRows = detailRows.map((r) => {
+          const realStdCode = displayStdProductCode(r);
+          const realStdName = String(r.stdName || '');
+          const topCand = Array.isArray(r.importMatchCandidates) && r.importMatchCandidates.length
+            ? [...r.importMatchCandidates].sort((a, b) => b.overall - a.overall)[0]
+            : null;
+          return {
+            customerProductName: String(r.name || ''),
+            brand: String(r.customerBrand || r.brand || ''),
+            spec: String(r.customerSpec || r.spec || ''),
+            matchedStdProduct: realStdName ? `${realStdName}（系统匹配）` : '',
+            matchHint: topCand ? (topCand.hint || `综合${topCand.overall}%（名称${topCand.namePct}% 品牌${topCand.brandPct}% 规格${topCand.specPct}%）`) : buildMatchHint(r),
+            stdProduct: realStdName,
+            stdProductCode: realStdCode,
+            stdBrand: String(r.brand || ''),
+            stdSpec: String(r.spec || ''),
+            unit: String(r.unit || ''),
+            salesForecast: String(r.salesForecast || ''),
+            lv1: String(r.cat1 || ''),
+            lv2: '',
+            purchaseBenchmarkMode: String(r.purchaseBenchmarkMode || ''),
+            marginRange: String(r.marginRange || ''),
+            marketResearchPrice: r.market == null ? String(r.purchaseBase || '') : String(r.market),
+            purchaseRef: String(r.purchaseBase || ''),
+            purchaseRefTouched: false,
+            salesRefRange: String(r.salesRefRange || ''),
+            markupRate: String(r.markupRate || ''),
+            lastSalesPrice: String(r.lastSalesPrice || ''),
+            priceTrend: String(r.priceTrend || ''),
+            purchaseConfirm: String(r.purchaseConfirm || ''),
+            recommendedSupplier: '',
+            salesConfirm: String(r.salesConfirm || ''),
+            confirmSalesMargin: String(r.confirmSalesMargin || ''),
+            collabMode: String(r.collabMode || ''),
+            isYihai: !!r.isYihai,
+            importMatchCandidates: Array.isArray(r.importMatchCandidates) ? r.importMatchCandidates : [],
+            selectedStdCode: realStdCode,
+            _taskId: r._taskId || '',
+            _itemIndex: r._itemIndex != null ? r._itemIndex : null
+          };
+        });
+        const payload = {
+          id: generatedId,
+          createdAt: new Date().toISOString(),
+          rows: detailSeedRows
+        };
+        const storageKey = 'quoteApplyWizardSeed:' + generatedId;
+        sessionStorage.setItem(storageKey, JSON.stringify(payload));
+        q.set('seedKey', storageKey);
+      } catch (e) {
+        // 会话存储失败时降级，仅携带基础参数跳转
+        void e;
+      }
+      navigateToDetail(q.toString());
+    }
+
+    $('opCompany').addEventListener('change', () => {
+      bindDealerFromOp();
+      syncCategoryModeMatrix();
+      if (currentStep === 2) renderDetailTable();
+    });
+    $('customerType').addEventListener('change', () => {
+      if (currentStep === 2) {
+        syncCategoryModeMatrix();
+        renderDetailTable();
+      }
+    });
+    let prevQuoteType = '';
+    $('quoteType').addEventListener('change', () => {
+      const wasAdhoc = prevQuoteType === '临客询价';
+      prevQuoteType = ($('quoteType').value || '').trim();
+      syncQuoteTypeCustomerProjectUI();
+      if (isAdhocQuoteType() && !wasAdhoc) {
+        $('customerType').value = '';
+        $('customerChannel').value = '';
+        selectedCustomerIds = [];
+        selectedProjectSites = [];
+      }
+      if (!isAdhocQuoteType() && wasAdhoc) {
+        selectedCustomerIds = [];
+        selectedProjectSites = [];
+        $('customerType').value = '';
+        $('customerChannel').value = '';
+      }
+      syncCustomerChannelFieldState();
+      renderCustomerMulti();
+      renderProjectSiteMulti();
+    });
+
+    (function bindDetailTableImportDelegation() {
+      const tb = $('detailTbody');
+      if (!tb || tb.dataset.importBound === '1') return;
+      tb.dataset.importBound = '1';
+      tb.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest && e.target.closest('.import-match-adjust-btn');
+        if (!btn) return;
+        const idx = +btn.getAttribute('data-row-index');
+        if (!Number.isFinite(idx)) return;
+        openImportMatchModal(idx);
+      });
+    })();
+
+    renderCategoryGrid();
+    bindDealerFromOp();
+    initCustomerProjectDropdowns();
+    bindProjectSiteMultiUI();
+    bindQuoteTitleAutoSync();
+    bindSpecialCustomerBannerEvents();
+    syncCustomerChannelFieldState();
+    syncQuoteTypeCustomerProjectUI();
+    initDefaultCustomerCascade();
+    refreshSpecialCustomerBanner();
+    prevQuoteType = ($('quoteType').value || '').trim();
+    syncCategoryModeMatrix();
+    updateStepUI();
+
+    const t = new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    $('quoteStart').value = iso(t);
+    const end = new Date(t);
+    end.setMonth(end.getMonth() + 1);
+    $('quoteEnd').value = iso(end);
+    refreshQuoteTitle(false);
+  </script>
+</body>
+</html>

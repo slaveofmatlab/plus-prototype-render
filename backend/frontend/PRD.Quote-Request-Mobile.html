@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>报价申请（手机端）</title>
+  <style>
+    :root {
+      --sfa-primary: #1b766c;
+      --sfa-primary-pressed: #003932;
+      --sfa-text-primary: #000000;
+      --sfa-text-secondary: #666666;
+      --sfa-text-tertiary: #999999;
+      --sfa-divider: #eeeeee;
+      --sfa-bg-page: #f6f6f8;
+      --sfa-bg-card: #ffffff;
+      --sfa-bg-input: #f2f2f2;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --radius-card: 12px;
+      --radius-input: 10px;
+      --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(165deg, #c5cad3 0%, #9ca3af 45%, #6b7280 100%);
+      color: var(--sfa-text-primary);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .hidden { display: none !important; }
+    .phone-mock-wrap { flex: 0 0 auto; filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.28)); }
+    .phone-mock {
+      position: relative;
+      padding: 10px;
+      border-radius: 44px;
+      overflow: hidden;
+      background: linear-gradient(165deg, #3f3f42 0%, #252527 35%, #1a1a1c 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.35);
+    }
+    .phone-mock-earpiece {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 88px;
+      height: 26px;
+      background: #0d0d0f;
+      border-radius: 14px;
+      z-index: 5;
+      pointer-events: none;
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.06);
+    }
+    .phone-mock-side-btn {
+      position: absolute;
+      right: -3px;
+      top: 120px;
+      width: 4px;
+      height: 56px;
+      background: linear-gradient(90deg, #2a2a2c, #1f1f21);
+      border-radius: 0 3px 3px 0;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+    .phone-mock-side-btn--vol { top: 200px; height: 48px; }
+    .phone-mock-screen {
+      position: relative;
+      width: 375px;
+      max-width: calc(100vw - 48px);
+      height: min(812px, calc(100dvh - 96px));
+      max-height: calc(100dvh - 96px);
+      overflow: hidden;
+      background: var(--sfa-bg-page);
+      border-radius: 34px;
+      transform: translateZ(0);
+      isolation: isolate;
+      padding-top: 10px;
+    }
+    .screen-shell {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .app-header {
+      position: relative;
+      z-index: 20;
+      background: #fff;
+      border-bottom: 1px solid var(--sfa-divider);
+      padding-top: var(--safe-top);
+      flex-shrink: 0;
+    }
+    .nav {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+    }
+    .nav-title { font-size: 17px; font-weight: 650; }
+    .nav-btn {
+      min-width: 44px;
+      height: 44px;
+      border: none;
+      background: transparent;
+      font-size: 15px;
+      color: var(--sfa-primary);
+      cursor: pointer;
+    }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px 10px;
+      flex-wrap: wrap;
+    }
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-tag.doc { background: #eaf6f4; color: var(--sfa-primary); }
+    .status-tag.mode { background: #f3f4f6; color: #374151; }
+    .steps {
+      display: flex;
+      gap: 8px;
+      padding: 0 12px 12px;
+    }
+    .step {
+      flex: 1;
+      border-radius: 999px;
+      height: 34px;
+      border: 1px solid var(--sfa-divider);
+      background: #fff;
+      color: var(--sfa-text-secondary);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step.active {
+      border-color: var(--sfa-primary);
+      color: var(--sfa-primary);
+      background: #eaf6f4;
+      font-weight: 600;
+    }
+    .content-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+    }
+    .content-scroll::-webkit-scrollbar { width: 5px; }
+    .content-scroll::-webkit-scrollbar-track { background: transparent; margin: 6px 0; }
+    .content-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.22);
+      border-radius: 5px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .container { padding: 12px; }
+    .card {
+      background: var(--sfa-bg-card);
+      border: 1px solid var(--sfa-divider);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .card-title { margin: 0 0 12px; font-size: 15px; font-weight: 650; }
+    .hint { font-size: 12px; color: var(--sfa-text-secondary); line-height: 1.5; margin-top: 8px; }
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+    .label { display: block; margin-bottom: 6px; color: var(--sfa-text-secondary); font-size: 13px; }
+    .label.req::before { content: "*"; color: #ff4d4f; margin-right: 4px; }
+    .input, .select, .textarea {
+      width: 100%;
+      border: none;
+      border-radius: var(--radius-input);
+      background: var(--sfa-bg-input);
+      padding: 0 12px;
+      color: var(--sfa-text-primary);
+      font-size: 14px;
+      outline: none;
+    }
+    .input, .select { height: 42px; }
+    .textarea {
+      min-height: 72px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      resize: none;
+      line-height: 1.5;
+    }
+    .input:focus, .select:focus, .textarea:focus {
+      box-shadow: 0 0 0 1px var(--sfa-primary);
+      background: #fff;
+    }
+    .readonly-box {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      border-radius: var(--radius-input);
+      background: #f7f7f8;
+      color: var(--sfa-text-primary);
+      padding: 0 12px;
+      font-size: 14px;
+      border: 1px solid #ececec;
+    }
+    .chip-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      min-height: 34px;
+      border: 1px solid var(--sfa-divider);
+      border-radius: 999px;
+      padding: 0 12px;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      background: #fff;
+      cursor: pointer;
+    }
+    .chip input { display: none; }
+    .chip.active,
+    .chip:has(input:checked) {
+      border-color: var(--sfa-primary);
+      color: var(--sfa-primary);
+      background: #eaf6f4;
+      font-weight: 600;
+    }
+    .multi-select {
+      min-height: 42px;
+      border-radius: var(--radius-input);
+      background: var(--sfa-bg-input);
+      padding: 8px 12px;
+      outline: none;
+    }
+    .multi-select:focus,
+    .multi-select:focus-within {
+      box-shadow: 0 0 0 2px rgba(27, 118, 108, 0.12);
+    }
+    .multi-select-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 26px;
+      cursor: pointer;
+    }
+    .multi-select-value {
+      flex: 1;
+      font-size: 14px;
+      color: var(--sfa-text-primary);
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .multi-select-input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--sfa-text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .multi-select-input::placeholder {
+      color: var(--sfa-text-tertiary);
+    }
+    .multi-select-arrow {
+      color: var(--sfa-text-tertiary);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .multi-select-panel {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .multi-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--sfa-text-primary);
+    }
+    .multi-option input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--sfa-primary);
+    }
+    .multi-empty {
+      font-size: 12px;
+      color: var(--sfa-text-tertiary);
+      line-height: 1.6;
+      padding: 2px 0;
+    }
+    .mode-row {
+      border: 1px solid var(--sfa-divider);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #fafafa;
+    }
+    .mode-row:last-child { margin-bottom: 0; }
+    .mode-cat { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .mini { font-size: 12px; color: var(--sfa-text-tertiary); line-height: 1.6; }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 4px 8px;
+      align-items: center;
+    }
+    .detail-grid .k { color: var(--sfa-text-secondary); font-size: 12px; }
+    .detail-grid .v { color: var(--sfa-text-primary); font-size: 12px; line-height: 1.5; word-break: break-word; }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .btn {
+      min-width: 72px;
+      height: 36px;
+      border: 1px solid var(--sfa-divider);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--sfa-text-primary);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 0 14px;
+    }
+    .btn.primary {
+      background: var(--sfa-primary);
+      border-color: var(--sfa-primary);
+      color: #fff;
+    }
+    .btn.primary:active { background: var(--sfa-primary-pressed); }
+    .btn.ghost {
+      background: #f8faf9;
+      color: var(--sfa-primary);
+      border-color: #cfe5e1;
+    }
+    .detail-item {
+      border: 1px solid var(--sfa-divider);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: #fff;
+    }
+    .detail-item:last-child { margin-bottom: 0; }
+    .detail-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 8px;
+    }
+    .detail-title { font-size: 14px; font-weight: 600; color: #222; margin: 0; }
+    .detail-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .detail-delete-btn {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      color: #ff6565;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+    .detail-delete-btn svg { width: 16px; height: 16px; }
+    .detail-fold-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--sfa-text-tertiary);
+      transition: transform .2s ease;
+      flex-shrink: 0;
+    }
+    .detail-item.collapsed .detail-fold-icon { transform: rotate(-90deg); }
+    .detail-summary {
+      border: 1px solid #f0f0f0;
+      border-radius: 8px;
+      background: #fafafa;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+    .detail-item:not(.collapsed) .detail-summary { display: none; }
+    .detail-body { display: block; }
+    .detail-item.collapsed .detail-body { display: none; }
+    .detail-edit-row {
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .detail-edit-label {
+      color: var(--sfa-text-secondary);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .detail-edit-label.req::before { content: "*"; color: #ff4d4f; margin-right: 4px; }
+    .detail-edit-input {
+      width: 100%;
+      min-height: 38px;
+      border: none;
+      border-radius: 10px;
+      background: var(--sfa-bg-input);
+      padding: 0 12px;
+      color: var(--sfa-text-primary);
+      font-size: 13px;
+      outline: none;
+    }
+    .detail-edit-input:focus {
+      box-shadow: 0 0 0 1px var(--sfa-primary);
+      background: #fff;
+    }
+    .margin-summary-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .margin-summary-item {
+      border: 1px solid #f0f0f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fafafa;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .ms-label {
+      font-size: 12px;
+      color: var(--sfa-text-secondary);
+      line-height: 1.4;
+    }
+    .ms-value {
+      flex-shrink: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--sfa-primary);
+    }
+    .action-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      padding-bottom: calc(12px + var(--safe-bottom));
+      background: rgba(255,255,255,0.98);
+      border-top: 1px solid var(--sfa-divider);
+      flex-shrink: 0;
+    }
+    .action-bar .btn { flex: 1; }
+    .btn:disabled, .btn.primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .mode-scope {
+      margin-top: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--sfa-text-secondary);
+      background: #f8fafa;
+      border-radius: 8px;
+      border: 1px solid #e8eeed;
+    }
+    .mode-scope-label { color: var(--sfa-text-primary); font-weight: 600; }
+    .mode-scope-line { display: block; margin-top: 4px; }
+    .mode-scope-line:first-child { margin-top: 0; }
+    .mode-margin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .mode-margin-item {
+      background: #fff;
+      border: 1px solid var(--sfa-divider);
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+    }
+    .mode-margin-item .k { font-size: 11px; color: var(--sfa-text-tertiary); }
+    .mode-margin-item .v { font-size: 14px; font-weight: 600; margin-top: 2px; color: var(--sfa-text-primary); }
+    .mode-ref-block { margin-top: 10px; }
+    .mode-ref-block .label {
+      display: block;
+      font-size: 12px;
+      color: var(--sfa-text-secondary);
+      margin-bottom: 4px;
+    }
+    .mode-ref-block .label.req::before { content: "* "; color: #e53935; }
+    .mode-ref-block .select {
+      width: 100%;
+      height: 36px;
+      border: 1px solid var(--sfa-divider);
+      border-radius: 8px;
+      padding: 0 10px;
+      font-size: 13px;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-mock-wrap">
+    <div class="phone-mock">
+      <div class="phone-mock-earpiece"></div>
+      <div class="phone-mock-side-btn"></div>
+      <div class="phone-mock-side-btn phone-mock-side-btn--vol"></div>
+      <div class="phone-mock-screen">
+        <div class="screen-shell">
+          <header class="app-header">
+            <div class="nav">
+              <button class="nav-btn" type="button" onclick="goCancelList()">返回</button>
+              <div class="nav-title" id="navTitle">报价申请</div>
+              <span class="nav-btn" aria-hidden="true" style="visibility:hidden;pointer-events:none">返回</span>
+            </div>
+            <div class="status-bar">
+              <span class="status-tag doc" id="docStatusTag">单据状态：新建</span>
+              <span class="status-tag mode" id="oaStatusTag">OA：初始</span>
+            </div>
+            <div class="steps">
+              <div class="step active" id="s1">1 基础信息</div>
+              <div class="step" id="s2">2 品类与明细</div>
+            </div>
+          </header>
+
+          <div class="content-scroll">
+            <main class="container">
+              <section id="panel1">
+                <div class="card">
+                  <h3 class="card-title">基础信息</h3>
+                  <div class="field">
+                    <label class="label req" for="opCompany">运营公司</label>
+                    <select id="opCompany" class="select">
+                      <option value="">请选择</option>
+                      <option>丰厨(上海)供应链管理有限公司</option>
+                      <option>丰厨(北京)供应链管理有限公司</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="label req" for="dealerCompany">经销商公司</label>
+                    <select id="dealerCompany" class="select" disabled>
+                      <option value="">请先选择运营公司</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="label req" for="quoteType">报价类型</label>
+                    <select id="quoteType" class="select">
+                      <option value="">请选择</option>
+                      <option>常规报价</option>
+                      <option>临采报价</option>
+                      <option>临客询价</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="label" id="customerChannelLabel" for="customerChannel">客户渠道</label>
+                    <select id="customerChannel" class="select">
+                      <option value="">请选择</option>
+                      <option>团餐及大众餐饮</option>
+                      <option>酒店及高端餐饮</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="label req" for="customerType">客户类型</label>
+                    <select id="customerType" class="select">
+                      <option value="">请选择</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="label req" id="customerLabel">客户名称</label>
+                    <div id="customerMultiWrap">
+                      <div class="multi-select" id="customerMultiSelect" tabindex="0" role="combobox" aria-expanded="false">
+                        <div class="multi-select-head" id="customerMultiHead">
+                          <input class="multi-select-input" id="customerMultiInput" placeholder="请先选择客户渠道、客户类型" autocomplete="off" />
+                          <span class="multi-select-arrow" id="customerMultiArrow">展开</span>
+                        </div>
+                        <div class="multi-select-panel hidden" id="customerMultiPanel"></div>
+                      </div>
+                    </div>
+                    <input id="customerName" class="input hidden" placeholder="临客询价时手动输入客户名称" />
+                    <div class="hint hidden" id="customerHint" aria-hidden="true"></div>
+                  </div>
+                  <div class="field">
+                    <label class="label" id="projectLabel">项目点名称（选填）</label>
+                    <div id="projectMultiWrap">
+                      <div class="multi-select" id="projectMultiSelect" tabindex="0" role="combobox" aria-expanded="false">
+                        <div class="multi-select-head" id="projectMultiHead">
+                          <input class="multi-select-input" id="projectMultiInput" placeholder="请选择" autocomplete="off" />
+                          <span class="multi-select-arrow" id="projectMultiArrow">展开</span>
+                        </div>
+                        <div class="multi-select-panel hidden" id="projectMultiPanel"></div>
+                      </div>
+                    </div>
+                    <input id="projectSiteName" class="input hidden" placeholder="临客询价时手动输入项目点" />
+                    <div class="hint hidden" id="projectHint" aria-hidden="true"></div>
+                  </div>
+                  <div class="field">
+                    <label class="label req" for="quoteTitle">报价标题</label>
+                    <input id="quoteTitle" class="input" placeholder="默认：客户名称+开始日期+结束日期+销售报价" />
+                  </div>
+                  <div class="field">
+                    <label class="label req" for="quoteStart">报价开始日期</label>
+                    <input id="quoteStart" class="input" type="date" />
+                  </div>
+                  <div class="field">
+                    <label class="label req" for="quoteEnd">报价结束日期</label>
+                    <input id="quoteEnd" class="input" type="date" />
+                  </div>
+                  <div class="field">
+                    <label class="label" for="remark">备注（选填）</label>
+                    <textarea id="remark" class="textarea" placeholder="请输入备注，最多 500 字"></textarea>
+                  </div>
+                </div>
+              </section>
+
+              <section id="panel2" class="hidden">
+                <div class="card">
+                  <h3 class="card-title">第一步摘要</h3>
+                  <div class="detail-grid">
+                    <div class="k">运营公司</div><div class="v" id="sumOp">-</div>
+                    <div class="k">经销商公司</div><div class="v" id="sumDealer">-</div>
+                    <div class="k">报价类型</div><div class="v" id="sumQuoteType">-</div>
+                    <div class="k">客户</div><div class="v" id="sumCustomer">-</div>
+                    <div class="k">报价标题</div><div class="v" id="sumTitle">-</div>
+                    <div class="k">项目点</div><div class="v" id="sumProject">-</div>
+                    <div class="k">客户渠道</div><div class="v" id="sumChannel">-</div>
+                    <div class="k">客户类型</div><div class="v" id="sumCustType">-</div>
+                    <div class="k">有效期</div><div class="v" id="sumRange">-</div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <h3 class="card-title">报价品类</h3>
+                  <div class="chip-group" id="categoryGrid"></div>
+                </div>
+
+                <div class="card">
+                  <h3 class="card-title">品类与采购基准价模式</h3>
+                  <p class="hint">每个品类需选择一种采购基准价模式，并用于明细联动采购基准价与毛利区间。</p>
+                  <div id="modeRows"></div>
+                </div>
+
+                <div class="card">
+                  <h3 class="card-title">产品明细</h3>
+                  <div class="toolbar">
+                    <button class="btn primary" type="button" onclick="goProductPickerPage()">选择产品</button>
+                    <button class="btn ghost" type="button" onclick="addEmptyDetailRow()">新增产品</button>
+                  </div>
+                  <p class="hint" id="detailHint">请先添加产品明细。</p>
+                  <div id="detailList"></div>
+                </div>
+
+                <div class="card">
+                  <h3 class="card-title">毛利汇总</h3>
+                  <div class="margin-summary-grid">
+                    <div class="margin-summary-item"><span class="ms-label">益海产品-供应商直送</span><span class="ms-value" id="marginSummaryYihaiDirect">—</span></div>
+                    <div class="margin-summary-item"><span class="ms-label">益海产品-大仓配送</span><span class="ms-value" id="marginSummaryYihaiWarehouse">—</span></div>
+                    <div class="margin-summary-item"><span class="ms-label">非益海产品-供应商直送</span><span class="ms-value" id="marginSummaryNonYihaiDirect">—</span></div>
+                    <div class="margin-summary-item"><span class="ms-label">非益海产品-大仓配送</span><span class="ms-value" id="marginSummaryNonYihaiWarehouse">—</span></div>
+                    <div class="margin-summary-item"><span class="ms-label">整单毛利</span><span class="ms-value" id="marginSummaryTotal">—</span></div>
+                  </div>
+                </div>
+              </section>
+            </main>
+          </div>
+
+          <footer class="action-bar" id="actionBar">
+            <button class="btn" id="btnPrev" type="button" onclick="goPrev()" style="display:none;">上一步</button>
+            <button class="btn" id="btnCancel" type="button" onclick="goCancelList()">返回</button>
+            <button class="btn primary" id="btnNext" type="button" onclick="goNext()">下一步</button>
+            <button class="btn primary" id="btnFinish" type="button" onclick="goFinish()" style="display:none;">保存</button>
+            <button class="btn primary" id="btnSubmit" type="button" onclick="onSubmitAudit()" style="display:none;">提交审核</button>
+            <button class="btn primary" id="btnPurchaseConfirm" type="button" onclick="onPurchaseConfirm()" style="display:none;">采购确认</button>
+            <button class="btn primary" id="btnSalesConfirm" type="button" onclick="onSalesConfirm()" style="display:none;">销售确认</button>
+            <button class="btn" id="btnVoid" type="button" onclick="onVoidDoc()" style="display:none;">作废</button>
+            <button class="btn" id="btnReturn" type="button" onclick="onReturnDoc()" style="display:none;">退回</button>
+          </footer>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const OP_TO_DEALER = {
+      "丰厨(上海)供应链管理有限公司": "益海嘉里·上海分公司",
+      "丰厨(北京)供应链管理有限公司": "益海嘉里·长沙分公司"
+    };
+    const MOCK_OP_TO_CUSTOMERS = {
+      "丰厨(上海)供应链管理有限公司": [
+        "上海锦江餐饮有限公司", "沪上团餐服务中心", "华东社餐联盟（上海）",
+        "上海某某餐饮有限公司", "南京味觉连锁餐饮管理有限公司", "深圳万惠团膳有限公司"
+      ],
+      "丰厨(北京)供应链管理有限公司": [
+        "北京央厨供应链客户A", "华北团餐客户B", "京冀分销客户C",
+        "北京某某酒店管理有限公司", "北京央企后勤服务中心", "北京工会福利集采平台"
+      ]
+    };
+    const WEBSITE_OPTIONS = [
+      { v: "", t: "请选择参考网站" },
+      { v: "农业农村部", t: "农业农村部官网 · 价格行情" },
+      { v: "新发地", t: "新发地市场行情" },
+      { v: "惠农网", t: "惠农网" },
+      { v: "一亩田", t: "一亩田" },
+      { v: "其他", t: "其他（上线后由主数据维护）" }
+    ];
+    const MASTER_CUSTOMER_CHANNELS = ["团餐及大众餐饮", "酒店及高端餐饮"];
+    const CUSTOMER_TYPES_BY_CHANNEL = {
+      "团餐及大众餐饮": ["政企客户", "团餐公司", "社餐连锁", "其他", "福利团购", "集团内公司"],
+      "酒店及高端餐饮": ["酒店", "餐饮", "经销", "其他", "德立安子公司"]
+    };
+const CUSTOMERS = [
+      { id: "c1", name: "上海某某餐饮有限公司", customerType: "社餐连锁", customerChannel: "团餐及大众餐饮" },
+      { id: "c5", name: "苏州某某连锁餐饮有限公司", customerType: "社餐连锁", customerChannel: "团餐及大众餐饮" },
+      { id: "c10", name: "上海锦江餐饮有限公司", customerType: "社餐连锁", customerChannel: "团餐及大众餐饮" },
+      { id: "c11", name: "南京味觉连锁餐饮管理有限公司", customerType: "社餐连锁", customerChannel: "团餐及大众餐饮" },
+      { id: "c31", name: "京冀分销客户C", customerType: "社餐连锁", customerChannel: "团餐及大众餐饮" },
+      { id: "c3", name: "广州某某团餐服务公司", customerType: "团餐公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c6", name: "益海嘉里食品营销有限公司广州分公司", customerType: "团餐公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c7", name: "广州益嘉德立安食品有限公司", customerType: "团餐公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c8", name: "广州采华餐饮管理有限公司三亚河心岛分公司", customerType: "团餐公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c9", name: "广州市五丰行贸易有限公司", customerType: "团餐公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c12", name: "沪上团餐服务中心", customerType: "团餐公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c13", name: "深圳万惠团膳有限公司", customerType: "团餐公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c29", name: "北京央厨供应链客户A", customerType: "团餐公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c30", name: "华北团餐客户B", customerType: "团餐公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c4", name: "杭州某某政企客户", customerType: "政企客户", customerChannel: "团餐及大众餐饮" },
+      { id: "c14", name: "上海市政府机关事务管理局（配餐）", customerType: "政企客户", customerChannel: "团餐及大众餐饮" },
+      { id: "c15", name: "北京央企后勤服务中心", customerType: "政企客户", customerChannel: "团餐及大众餐饮" },
+      { id: "c16", name: "华东社餐联盟（上海）", customerType: "政企客户", customerChannel: "团餐及大众餐饮" },
+      { id: "c17", name: "武汉综合配餐试点客户", customerType: "其他", customerChannel: "团餐及大众餐饮" },
+      { id: "c18", name: "成都渠道拓展客户", customerType: "其他", customerChannel: "团餐及大众餐饮" },
+      { id: "c19", name: "上海员工福利团购中心", customerType: "福利团购", customerChannel: "团餐及大众餐饮" },
+      { id: "c20", name: "北京工会福利集采平台", customerType: "福利团购", customerChannel: "团餐及大众餐饮" },
+      { id: "c21", name: "丰厨（上海）内部配餐中心", customerType: "集团内公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c22", name: "益海嘉里集团员工餐厅（上海）", customerType: "集团内公司", customerChannel: "团餐及大众餐饮" },
+      { id: "c2", name: "北京某某酒店管理有限公司", customerType: "酒店", customerChannel: "酒店及高端餐饮" },
+      { id: "c23", name: "上海国际 resort 酒店集团", customerType: "酒店", customerChannel: "酒店及高端餐饮" },
+      { id: "c24", name: "广州白天鹅宾馆供应链", customerType: "酒店", customerChannel: "酒店及高端餐饮" },
+      { id: "c25", name: "北京高端会所餐饮（国贸）", customerType: "餐饮", customerChannel: "酒店及高端餐饮" },
+      { id: "c26", name: "上海外滩精品餐饮联采", customerType: "餐饮", customerChannel: "酒店及高端餐饮" },
+      { id: "c27", name: "华东高端餐饮经销商A", customerType: "经销", customerChannel: "酒店及高端餐饮" },
+      { id: "c28", name: "德立安（上海）餐饮供应链", customerType: "德立安子公司", customerChannel: "酒店及高端餐饮" }
+    ];
+const PROJECTS = {
+      c1: ["上海-项目点A", "上海-项目点B", "上海-浦东项目"],
+      c2: ["北京-总部项目", "北京-朝阳项目", "北京-国贸配餐点"],
+      c3: ["广州-天河项目", "广州-越秀项目"],
+      c4: ["杭州-滨江项目", "杭州-西湖项目"],
+      c5: ["苏州-园区项目", "苏州-姑苏项目"],
+      c6: ["广州-黄埔项目", "广州-白云项目"],
+      c7: ["广州-番禺项目", "广州-南沙项目"],
+      c8: ["三亚-河心岛项目", "广州-天河配送点"],
+      c9: ["广州-越秀项目", "广州-海珠项目"],
+      c10: ["锦江-徐汇项目", "锦江-长宁项目", "锦江-浦东项目"],
+      c11: ["南京-江宁项目", "南京-鼓楼项目"],
+      c12: ["沪上-张江项目", "沪上-闵行项目", "沪上-宝山项目"],
+      c13: ["深圳-南山项目", "深圳-福田项目"],
+      c14: ["机关-浦东配餐点", "机关-人民广场配餐点"],
+      c15: ["央企-总部食堂", "央企-亦庄配餐点"],
+      c16: ["联盟-徐汇联采点", "联盟-杨浦联采点"],
+      c17: ["武汉-光谷试点", "武汉-江汉试点"],
+      c18: ["成都-高新项目", "成都-武侯项目"],
+      c19: ["福利-浦东团购仓", "福利-闵行团购仓"],
+      c20: ["福利-朝阳团购仓", "福利-海淀团购仓"],
+      c21: ["内部-上海总部食堂", "内部-上海仓储配餐"],
+      c22: ["集团-金龙鱼大厦食堂", "集团-研发中心配餐"],
+      c23: ["resort-崇明项目", "resort-青浦项目"],
+      c24: ["白天鹅-沙面项目", "白天鹅-滨江项目"],
+      c25: ["国贸-会所A", "国贸-会所B"],
+      c26: ["外滩-联采中心", "外滩-北外滩项目"],
+      c27: ["经销-华东仓配", "经销-苏南仓配"],
+      c28: ["德立安-上海仓", "德立安-杭州仓"],
+      c29: ["央厨-北京顺义项目", "央厨-北京通州项目"],
+      c30: ["华北-天津项目", "华北-石家庄项目"],
+      c31: ["京冀-廊坊分销点", "京冀-保定分销点"]
+    };
+    const LV1 = ["米面油", "干调类", "冻品类", "调理类", "蔬菜类", "休闲食品", "饮料", "豆制品", "禽蛋类"];
+    const PURCHASE_MODE_OPTIONS = ["市调价格", "参考现客户价格", "网站价格", "采购价格(有效且最低)"];
+    const MODES = PURCHASE_MODE_OPTIONS;
+    const UNIT_OPTIONS = ["箱", "袋", "件", "公斤", "瓶"];
+    const COLLAB_MODES = ["大仓配送", "供应商直送"];
+    /** 与 PRD.Quote-Request-New.html BENCHMARK_MODE_SOURCE_ROWS 同源 */
+    const BENCHMARK_MODE_SOURCE_ROWS = [
+      { id: "r1", branch: "益海嘉里·浙江分公司", lv1Cats: ["米面油", "干调类"], custTypes: ["团餐", "社餐", "企事业食堂"], minMargin: 1, maxMargin: 15 },
+      { id: "r2", branch: "益海嘉里·浙江分公司", lv1Cats: ["冻品类", "调理类"], custTypes: ["团餐", "企事业食堂"], minMargin: 8, maxMargin: 22 },
+      { id: "r3", branch: "益海嘉里·浙江分公司", lv1Cats: ["蔬菜类", "牛羊肉", "鲜猪肉"], custTypes: ["企事业食堂"], minMargin: 11, maxMargin: 22 },
+      { id: "r4", branch: "益海嘉里·浙江分公司", lv1Cats: ["禽蛋类"], custTypes: ["团餐", "社餐", "企事业食堂"], minMargin: 7, maxMargin: 12 },
+      { id: "r5", branch: "益海嘉里·浙江分公司", lv1Cats: ["豆制品", "鲜禽类"], custTypes: ["团餐", "企事业食堂"], minMargin: 7, maxMargin: 16 },
+      { id: "r6", branch: "益海嘉里·浙江分公司", lv1Cats: ["水果", "水饮", "水产", "奶制品", "休闲食品"], custTypes: ["企事业食堂"], minMargin: 8, maxMargin: 9 },
+      { id: "r7", branch: "益海嘉里·长沙分公司", lv1Cats: ["米面油", "干调类", "冻品类", "调理类"], custTypes: ["团餐", "社餐", "企事业食堂", "分销&现款"], minMargin: 1, maxMargin: 6 },
+      { id: "r8", branch: "益海嘉里·上海分公司", lv1Cats: ["米面油", "干调类"], custTypes: ["酒店", "社餐"], minMargin: 3, maxMargin: 18 },
+      { id: "r9", branch: "益海嘉里·广州分公司", lv1Cats: ["调理类", "冻品类"], custTypes: ["团餐", "分销&现款"], minMargin: 5, maxMargin: 20 },
+      { id: "r10", branch: "益海嘉里·上海分公司", lv1Cats: ["休闲食品", "饮料"], custTypes: ["酒店"], minMargin: 4, maxMargin: 8 },
+      { id: "r11", branch: "益海嘉里·浙江分公司", lv1Cats: ["米面油"], custTypes: ["酒店", "社餐"], minMargin: 2, maxMargin: 10 },
+      { id: "r12", branch: "益海嘉里·上海分公司", lv1Cats: ["米面油", "干调类", "冻品类", "调理类", "休闲食品", "饮料"], custTypes: ["团餐"], minMargin: 3, maxMargin: 18 }
+    ];
+    /** 与 Web PRD.Quote-Request-Detail.html / PRD.Quote-Request-New.html 同源 */
+    const BENCHMARK_SCOPE_DETAIL_LINES = [
+      { branch: "益海嘉里·浙江分公司", customerType: "团餐", lv1: "米面油", refScope: "税率：13%" },
+      { branch: "益海嘉里·浙江分公司", customerType: "团餐", lv1: "干调类", refScope: "品牌：有品牌时应用" },
+      { branch: "益海嘉里·浙江分公司", customerType: "团餐", lv1: "冻品类", refScope: "是否益海：是" },
+      { branch: "益海嘉里·长沙分公司", customerType: "团餐", lv1: "冻品类", refScope: "是否益海：是" },
+      { branch: "益海嘉里·浙江分公司", customerType: "社餐", lv1: "米面油", refScope: "是否益海：是" },
+      { branch: "益海嘉里·上海分公司", customerType: "社餐", lv1: "米面油", refScope: "是否益海：全部" },
+      { branch: "益海嘉里·上海分公司", customerType: "团餐", lv1: "米面油", refScope: "是否益海：是" },
+      { branch: "益海嘉里·上海分公司", customerType: "团餐", lv1: "干调类", refScope: "税率：13%" },
+      { branch: "益海嘉里·上海分公司", customerType: "团餐", lv1: "冻品类", refScope: "品牌：有品牌时应用" },
+      { branch: "益海嘉里·广州分公司", customerType: "团餐", lv1: "调理类", refScope: "是否益海：是" },
+      { branch: "益海嘉里·上海分公司", customerType: "酒店", lv1: "米面油", refScope: "税率：13%" }
+    ];
+    /** 与 PRD.Quote-Request-New.html 产品库同源（18 条） */
+    const MOCK_PRODUCTS = [
+      { code: "P001", stdName: "特精小麦粉（标准）", name: "特精小麦粉", brand: "香满园", spec: "25kg/袋", cat1: "米面油", market: 89, lastSalesPrice: 91.5, isYihai: true, collabMode: "大仓配送" },
+      { code: "P002", stdName: "金龙鱼大豆油一级5L×4（标准）", name: "金龙鱼大豆油一级", brand: "金龙鱼", spec: "5L×4", cat1: "米面油", market: 268, lastSalesPrice: 273.0, isYihai: true, collabMode: "供应商直送" },
+      { code: "P003", stdName: "生抽酱油1.8L×6（标准）", name: "生抽酱油", brand: "海皇", spec: "1.8L×6", cat1: "干调类", market: 42, lastSalesPrice: 41.0, isYihai: false, collabMode: "供应商直送" },
+      { code: "P004", stdName: "速冻水饺500g（标准）", name: "速冻水饺", brand: "丰厨", spec: "500g×20", cat1: "冻品类", market: 156, lastSalesPrice: 160.0, isYihai: false, collabMode: "大仓配送" },
+      { code: "P005", stdName: "调理鸡腿肉10kg（标准）", name: "调理鸡腿肉", brand: "丰厨", spec: "10kg/箱", cat1: "调理类", market: 198, lastSalesPrice: 203.0, isYihai: true, collabMode: "大仓配送" },
+      { code: "P006", stdName: "土豆净菜5kg（标准）", name: "土豆（净菜）", brand: "—", spec: "5kg/袋", cat1: "蔬菜类", market: 18, lastSalesPrice: 18.6, isYihai: false, collabMode: "供应商直送" },
+      { code: "P007", stdName: "薯片组合装（标准）", name: "薯片组合装", brand: "休闲品牌X", spec: "组合", cat1: "休闲食品", market: 35, lastSalesPrice: 36.0, isYihai: false, collabMode: "大仓配送" },
+      { code: "P008", stdName: "纯净水550ml×24（标准）", name: "纯净水", brand: "品牌Y", spec: "550ml×24", cat1: "饮料", market: 22, lastSalesPrice: 22.5, isYihai: false, collabMode: "大仓配送" },
+      { code: "P009", stdName: "金龙鱼食用植物调和油5L×4（标准）", name: "金龙鱼调和油", brand: "金龙鱼", spec: "5L×4", cat1: "米面油", market: 312, lastSalesPrice: 318.0, isYihai: true, collabMode: "供应商直送" },
+      { code: "P010", stdName: "金龙鱼稻米油1.8L×6（标准）", name: "金龙鱼稻米油", brand: "金龙鱼", spec: "1.8L×6", cat1: "米面油", market: 128, lastSalesPrice: 131.0, isYihai: true, collabMode: "大仓配送" },
+      { code: "P011", stdName: "金龙鱼芝麻油400ml×12（标准）", name: "金龙鱼芝麻油", brand: "金龙鱼", spec: "400ml×12", cat1: "干调类", market: 56, lastSalesPrice: 57.5, isYihai: true, collabMode: "供应商直送" },
+      { code: "P012", stdName: "陈醋500ml×12（标准）", name: "陈醋", brand: "地方品牌", spec: "500ml×12", cat1: "干调类", market: 38, lastSalesPrice: 39.0, isYihai: false, collabMode: "大仓配送" },
+      { code: "P013", stdName: "金龙鱼饺子粉2.5kg×6（标准）", name: "金龙鱼饺子粉", brand: "金龙鱼", spec: "2.5kg×6", cat1: "米面油", market: 95, lastSalesPrice: 97.0, isYihai: true, collabMode: "大仓配送" },
+      { code: "P014", stdName: "冻品青虾仁1kg×10（标准）", name: "青虾仁", brand: "海产牌", spec: "1kg×10", cat1: "冻品类", market: 220, lastSalesPrice: 225.0, isYihai: false, collabMode: "供应商直送" },
+      { code: "P015", stdName: "金龙鱼花生浓香调和油4L（标准）", name: "金龙鱼花生调和油", brand: "金龙鱼", spec: "4L×4", cat1: "米面油", market: 285, lastSalesPrice: 290.0, isYihai: true, collabMode: "供应商直送" },
+      { code: "P016", stdName: "内酯豆腐350g×24（标准）", name: "内酯豆腐", brand: "豆香园", spec: "350g×24", cat1: "豆制品", market: 48, lastSalesPrice: 49.0, isYihai: false, collabMode: "大仓配送" },
+      { code: "P017", stdName: "鲜鸡蛋30枚/托（标准）", name: "鲜鸡蛋", brand: "禽蛋直供", spec: "30枚/托", cat1: "禽蛋类", market: 32, lastSalesPrice: 33.0, isYihai: false, collabMode: "供应商直送" },
+      { code: "P018", stdName: "金龙鱼玉米胚芽油900ml×15（标准）", name: "金龙鱼玉米油", brand: "金龙鱼", spec: "900ml×15", cat1: "米面油", market: 175, lastSalesPrice: 178.0, isYihai: true, collabMode: "大仓配送" }
+    ];
+    /** 新增产品演示：客户侧产品信息 */
+    const NEW_DETAIL_MOCK = [
+      { name: "特精粉（客户简称）", collabMode: "大仓配送" },
+      { name: "速冻水饺家庭装", collabMode: "供应商直送" },
+      { name: "大豆油一级5升", collabMode: "大仓配送" },
+      { name: "青虾仁冻品", collabMode: "供应商直送" },
+      { name: "鲜鸡蛋30枚", collabMode: "大仓配送" }
+    ];
+    let newDetailMockIndex = 0;
+
+    const STAFF = {
+      purchase: { id: 'p_wang', name: '王采购' },
+      sales: { id: 's_zhang', name: '张销售' }
+    };
+
+    function getParam(name, fallback) {
+      return new URLSearchParams(location.search).get(name) || fallback || '';
+    }
+
+    const state = {
+      id: getParam('id', ''),
+      docStatus: getParam('docStatus', getParam('status', '新建')),
+      oaStatus: getParam('oaStatus', '初始'),
+      purchaseStaffId: STAFF.purchase.id,
+      salesStaffId: STAFF.sales.id,
+      loginRole: 'purchase'
+    };
+
+    let step = 1;
+    let categoryModeState = {};
+    let detailRows = [];
+    let selectedCustomerIds = [];
+    let customerSearchKeyword = "";
+    let selectedProjects = [];
+    let quoteTitleManuallyEdited = false;
+    let projectSearchKeyword = "";
+
+    function $(id) { return document.getElementById(id); }
+    function isDetailMode() { return !!String(state.id || '').trim(); }
+    function textOfSelect(id) {
+      const el = $(id);
+      const o = el && el.options[el.selectedIndex];
+      return o && o.value ? o.textContent.trim() : "";
+    }
+    function isAdhoc() { return $("quoteType").value.trim() === "临客询价"; }
+    function getDocStatus() { return state.docStatus || '新建'; }
+    function isPurchaseSelf() { return state.loginRole === 'purchase'; }
+    function isSalesSelf() { return state.loginRole === 'sales'; }
+    function canEditBasic() { return !isDetailMode() || state.docStatus === '新建'; }
+    function canEditDetailPrices(row, field) {
+      const st = state.docStatus;
+      if (st === '新建') return true;
+      if (st === '采购待确认' && isPurchaseSelf() && (field === 'purchaseConfirm' || field === 'markupRate' || field === 'supplyFlag')) return true;
+      if (st === '销售待确认' && isSalesSelf() && field === 'salesConfirm') return true;
+      return false;
+    }
+    function fmtMoney(v) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toFixed(2) : "-";
+    }
+    function getCustomerName() {
+      if (isAdhoc()) return $("customerName").value.trim();
+      return getSelectedCustomers().map((c) => c.name).join("、");
+    }
+    function updateQuoteTitle(force) {
+      if (!force && quoteTitleManuallyEdited) return;
+      const customerName = getCustomerName();
+      const start = $("quoteStart").value;
+      const end = $("quoteEnd").value;
+      if (!customerName || !start || !end) return;
+      $("quoteTitle").value = customerName + start + end + "销售报价";
+    }
+    function getSelectedCustomers() {
+      return selectedCustomerIds
+        .map((id) => CUSTOMERS.find((c) => c.id === id))
+        .filter(Boolean);
+    }
+    function populateCustomerTypeOptions() {
+      const sel = $("customerType");
+      sel.innerHTML = '<option value="">请选择</option>';
+      const source = CUSTOMER_TYPES_BY_CHANNEL[$("customerChannel").value] || [];
+      source.forEach((item) => {
+        const o = document.createElement("option");
+        o.value = item;
+        o.textContent = item;
+        sel.appendChild(o);
+      });
+    }
+    function bindDealer() {
+      const op = $("opCompany").value.trim();
+      const sel = $("dealerCompany");
+      if (!op) {
+        sel.innerHTML = '<option value="">请先选择运营公司</option>';
+        return;
+      }
+      const dealer = OP_TO_DEALER[op] || "";
+      sel.innerHTML = dealer ? `<option value="${dealer}">${dealer}</option>` : '<option value="">无关联经销商</option>';
+    }
+    function filteredCustomers() {
+      const channel = $("customerChannel").value.trim();
+      const type = $("customerType").value.trim();
+      return CUSTOMERS.filter((c) => {
+        if (channel && c.customerChannel !== channel) return false;
+        if (type && c.customerType !== type) return false;
+        if (customerSearchKeyword && !c.name.includes(customerSearchKeyword)) return false;
+        return true;
+      });
+    }
+    function clearCustomerSelection() {
+      selectedCustomerIds = [];
+      customerSearchKeyword = "";
+      selectedProjects = [];
+      projectSearchKeyword = "";
+      renderCustomerMultiSelect();
+      renderProjectMultiSelect();
+      updateQuoteTitle(false);
+    }
+    function openMultiPanel(panelId, arrowId, selectId) {
+      $(panelId).classList.remove("hidden");
+      $(arrowId).textContent = "收起";
+      const select = $(selectId);
+      if (select) select.setAttribute("aria-expanded", "true");
+    }
+    function toggleMultiPanel(panelId, arrowId, selectId) {
+      const panel = $(panelId);
+      const opened = !panel.classList.contains("hidden");
+      panel.classList.toggle("hidden", opened);
+      $(arrowId).textContent = opened ? "展开" : "收起";
+      const select = $(selectId);
+      if (select) {
+        select.setAttribute("aria-expanded", opened ? "false" : "true");
+        select.focus();
+      }
+    }
+    function renderCustomerMultiSelect() {
+      const panel = $("customerMultiPanel");
+      const input = $("customerMultiInput");
+      panel.innerHTML = "";
+      if (isAdhoc()) return;
+      const channel = $("customerChannel").value.trim();
+      const type = $("customerType").value.trim();
+      if (!channel || !type) {
+        input.value = "";
+        input.placeholder = "请先选择客户渠道、客户类型";
+        const empty = document.createElement("div");
+        empty.className = "multi-empty";
+        empty.textContent = "请选择客户渠道和客户类型后加载客户";
+        panel.appendChild(empty);
+        return;
+      }
+      const candidates = filteredCustomers();
+      selectedCustomerIds = selectedCustomerIds.filter((id) => {
+        const customer = CUSTOMERS.find((c) => c.id === id);
+        return customer && customer.customerChannel === channel && customer.customerType === type;
+      });
+      candidates.forEach((customer) => {
+        const lab = document.createElement("label");
+        lab.className = "multi-option";
+        lab.innerHTML = `<input type="checkbox" value="${customer.id}" ${selectedCustomerIds.includes(customer.id) ? "checked" : ""}><span>${customer.name}</span>`;
+        const input = lab.querySelector("input");
+        input.addEventListener("change", () => {
+          if (input.checked) {
+            if (!selectedCustomerIds.includes(customer.id)) selectedCustomerIds.push(customer.id);
+          } else {
+            selectedCustomerIds = selectedCustomerIds.filter((id) => id !== customer.id);
+          }
+          customerSearchKeyword = "";
+          selectedProjects = [];
+          projectSearchKeyword = "";
+          renderCustomerMultiSelect();
+          renderProjectMultiSelect();
+          updateQuoteTitle(false);
+        });
+        panel.appendChild(lab);
+      });
+      if (!candidates.length) {
+        const empty = document.createElement("div");
+        empty.className = "multi-empty";
+        empty.textContent = "未找到匹配的客户";
+        panel.appendChild(empty);
+      }
+      const names = getSelectedCustomers().map((c) => c.name);
+      input.value = customerSearchKeyword || names.join("、");
+      input.placeholder = names.length ? names.join("、") : "请选择客户";
+    }
+    function renderProjectMultiSelect() {
+      const panel = $("projectMultiPanel");
+      const input = $("projectMultiInput");
+      panel.innerHTML = "";
+      if (isAdhoc()) return;
+      const projectCandidates = Array.from(new Set(selectedCustomerIds.flatMap((cid) => PROJECTS[cid] || [])));
+      const filteredProjects = projectCandidates.filter((project) => {
+        if (!projectSearchKeyword) return true;
+        return project.includes(projectSearchKeyword);
+      });
+      filteredProjects.forEach((project) => {
+        const lab = document.createElement("label");
+        lab.className = "multi-option";
+        lab.innerHTML = `<input type="checkbox" value="${project}" ${selectedProjects.includes(project) ? "checked" : ""}><span>${project}</span>`;
+        const input = lab.querySelector("input");
+        input.addEventListener("change", () => {
+          if (input.checked) {
+            if (!selectedProjects.includes(project)) selectedProjects.push(project);
+          } else {
+            selectedProjects = selectedProjects.filter((x) => x !== project);
+          }
+          projectSearchKeyword = "";
+          renderProjectMultiSelect();
+        });
+        panel.appendChild(lab);
+      });
+      if (!filteredProjects.length) {
+        const empty = document.createElement("div");
+        empty.className = "multi-empty";
+        empty.textContent = selectedCustomerIds.length ? "未找到匹配的项目点" : "请先选择客户";
+        panel.appendChild(empty);
+      }
+      input.value = projectSearchKeyword || selectedProjects.join("、");
+      input.placeholder = selectedProjects.length ? selectedProjects.join("、") : "请选择";
+    }
+    function syncQuoteTypeUI() {
+      const adhoc = isAdhoc();
+      $("customerMultiWrap").classList.toggle("hidden", adhoc);
+      $("customerName").classList.toggle("hidden", !adhoc);
+      $("projectMultiWrap").classList.toggle("hidden", adhoc);
+      $("projectSiteName").classList.toggle("hidden", !adhoc);
+      $("customerChannel").disabled = false;
+      if (adhoc) {
+        $("customerChannelLabel").classList.add("req");
+        populateCustomerTypeOptions();
+        $("customerType").disabled = false;
+      } else {
+        $("customerChannelLabel").classList.add("req");
+        populateCustomerTypeOptions();
+        $("customerType").disabled = false;
+        selectedCustomerIds = [];
+        customerSearchKeyword = "";
+        selectedProjects = [];
+        projectSearchKeyword = "";
+        renderCustomerMultiSelect();
+        renderProjectMultiSelect();
+      }
+      updateQuoteTitle(false);
+    }
+function mapCustomerTypeForBenchmarkMaster(uiCustomerType) {
+      const t = String(uiCustomerType || "").trim();
+      const map = {
+        "团餐公司": "团餐",
+        "社餐连锁": "社餐",
+        "政企客户": "企事业食堂",
+        "福利团购": "企事业食堂",
+        "集团内公司": "团餐",
+        "其他": "团餐",
+        "酒店": "酒店",
+        "餐饮": "酒店",
+        "经销": "分销&现款",
+        "德立安子公司": "社餐"
+      };
+      return map[t] || t;
+    }
+    function masterRowsMatchingDealerAndCustomerType(dealerBranch, customerType) {
+      const b = String(dealerBranch || "").trim();
+      const ct = mapCustomerTypeForBenchmarkMaster(customerType);
+      if (!b || !ct) return [];
+      return BENCHMARK_MODE_SOURCE_ROWS.filter(
+        (m) => String(m.branch || "").trim() === b && (m.custTypes || []).includes(ct)
+      );
+    }
+    function findMarginRuleForLv1(dealerBranch, customerType, lv1) {
+      const rows = masterRowsMatchingDealerAndCustomerType(dealerBranch, customerType);
+      const d = String(lv1 || "").trim();
+      for (let i = 0; i < rows.length; i++) {
+        const m = rows[i];
+        if ((m.lv1Cats || []).includes(d)) return m;
+      }
+      return null;
+    }
+    function getMarginRuleFromSettings(cat1) {
+      const dealer = ($("dealerCompany")?.value || "").trim();
+      const ct = ($("customerType")?.value || "").trim();
+      return findMarginRuleForLv1(dealer, ct, cat1);
+    }
+    function formatMarginPctDisplay(rule, key) {
+      if (!rule) return "—";
+      const n = Number(rule[key]);
+      return Number.isFinite(n) ? String(n) : "—";
+    }
+    function normalizeCategoryState(cat) {
+      const st = categoryModeState[cat];
+      if (st && typeof st === "object" && !Array.isArray(st) && "mode" in st) {
+        return {
+          mode: String(st.mode || ""),
+          refCustomer: String(st.refCustomer || ""),
+          refWebsite: String(st.refWebsite || "")
+        };
+      }
+      if (typeof st === "string") {
+        return { mode: st, refCustomer: "", refWebsite: "" };
+      }
+      return { mode: "", refCustomer: "", refWebsite: "" };
+    }
+    function fillRefCustomerSelect(sel, selectedValue) {
+      const op = ($("opCompany")?.value || "").trim();
+      sel.innerHTML = "";
+      if (!op) {
+        sel.innerHTML = '<option value="">请先选择运营公司</option>';
+        return;
+      }
+      const list = MOCK_OP_TO_CUSTOMERS[op] || [];
+      sel.innerHTML = '<option value="">请选择参考客户</option>';
+      list.forEach((n) => {
+        const o = document.createElement("option");
+        o.value = n;
+        o.textContent = n;
+        sel.appendChild(o);
+      });
+      if (selectedValue && [...sel.options].some((opt) => opt.value === selectedValue)) sel.value = selectedValue;
+    }
+    function fillRefWebsiteSelect(sel, selectedValue) {
+      sel.innerHTML = "";
+      WEBSITE_OPTIONS.forEach(({ v, t }) => {
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = t;
+        sel.appendChild(o);
+      });
+      if (selectedValue && [...sel.options].some((opt) => opt.value === selectedValue)) sel.value = selectedValue;
+    }
+    function scopeLinesForCategory(dealerBranch, customerType, cat) {
+      const b = String(dealerBranch || "").trim();
+      const ct = mapCustomerTypeForBenchmarkMaster(customerType);
+      const c = String(cat || "").trim();
+      if (!b || !ct || !c) return [];
+      return BENCHMARK_SCOPE_DETAIL_LINES.filter((line) => line.branch === b && line.customerType === ct && line.lv1 === c);
+    }
+    function buildScopeRenderLines(dealerBranch, customerType, cat) {
+      const scopeLines = scopeLinesForCategory(dealerBranch, customerType, cat) || [];
+      const scoped = scopeLines.find((l) => {
+        const t = String(l?.refScope || "").trim();
+        return t && t !== "是否益海：全部";
+      }) || null;
+      const noneScoped = scopeLines.find((l) => {
+        const t = String(l?.refScope || "").trim();
+        return !t || t === "是否益海：全部";
+      }) || null;
+      const syntheticNone = scoped && !noneScoped ? { refScope: "" } : null;
+      const linesToRender = (scoped ? [scoped] : []).concat((noneScoped || syntheticNone) ? [noneScoped || syntheticNone] : []);
+      return linesToRender.length ? linesToRender : [null];
+    }
+    function formatScopeDisplayText(line) {
+      const raw = String(line?.refScope || "").trim();
+      return raw && raw !== "是否益海：全部" ? raw : "—";
+    }
+    function rowSupplyExcluded(r) {
+      return String((r && r.supplyFlag) || "").trim() === "否";
+    }
+
+    function marginRule(cat1) {
+      return getMarginRuleFromSettings(cat1);
+    }
+    function refreshModeRows() {
+      const root = $("modeRows");
+      root.innerHTML = "";
+      const cats = getSelectedCats();
+      cats.forEach((cat) => {
+        if (categoryModeState[cat] == null) categoryModeState[cat] = { mode: "", refCustomer: "", refWebsite: "" };
+        else categoryModeState[cat] = normalizeCategoryState(cat);
+      });
+      Object.keys(categoryModeState).forEach((k) => {
+        if (!cats.includes(k)) delete categoryModeState[k];
+      });
+      if (!cats.length) {
+        root.innerHTML = '<div class="mini">请先在上方勾选至少一个报价品类。</div>';
+        return;
+      }
+      const dealer = ($("dealerCompany")?.value || "").trim();
+      const uiCt = ($("customerType")?.value || "").trim();
+      cats.forEach((cat) => {
+        const st = normalizeCategoryState(cat);
+        categoryModeState[cat] = st;
+        const mr = getMarginRuleFromSettings(cat);
+        const scopeLines = buildScopeRenderLines(dealer, uiCt, cat);
+        const row = document.createElement("div");
+        row.className = "mode-row";
+
+        const catEl = document.createElement("div");
+        catEl.className = "mode-cat";
+        catEl.textContent = cat;
+        row.appendChild(catEl);
+
+        const scopeEl = document.createElement("div");
+        scopeEl.className = "mode-scope";
+        scopeEl.innerHTML = '<span class="mode-scope-label">应用范围</span>';
+        scopeLines.forEach((line) => {
+          const lineEl = document.createElement("span");
+          lineEl.className = "mode-scope-line";
+          lineEl.textContent = formatScopeDisplayText(line);
+          scopeEl.appendChild(lineEl);
+        });
+        row.appendChild(scopeEl);
+
+        const chipGroup = document.createElement("div");
+        chipGroup.className = "chip-group";
+        chipGroup.style.marginTop = "8px";
+        const groupName = "mode_" + encodeURIComponent(cat).replace(/%/g, "_");
+        PURCHASE_MODE_OPTIONS.forEach((mode) => {
+          const lab = document.createElement("label");
+          lab.className = "chip" + (st.mode === mode ? " active" : "");
+          const rb = document.createElement("input");
+          rb.type = "radio";
+          rb.name = groupName;
+          rb.value = mode;
+          rb.checked = st.mode === mode;
+          rb.addEventListener("change", () => {
+            const s = normalizeCategoryState(cat);
+            s.mode = mode;
+            if (mode !== "参考现客户价格") s.refCustomer = "";
+            if (mode !== "网站价格") s.refWebsite = "";
+            categoryModeState[cat] = s;
+            syncDetailRowModeFromCategory();
+            refreshModeRows();
+            renderDetailList();
+          });
+          lab.appendChild(rb);
+          lab.appendChild(document.createTextNode(mode));
+          chipGroup.appendChild(lab);
+        });
+        row.appendChild(chipGroup);
+
+        const marginGrid = document.createElement("div");
+        marginGrid.className = "mode-margin-grid";
+        marginGrid.innerHTML = `
+          <div class="mode-margin-item"><div class="k">最低毛利率(%)</div><div class="v">${formatMarginPctDisplay(mr, "minMargin")}</div></div>
+          <div class="mode-margin-item"><div class="k">最高毛利率(%)</div><div class="v">${formatMarginPctDisplay(mr, "maxMargin")}</div></div>
+        `;
+        row.appendChild(marginGrid);
+
+        if (st.mode === "参考现客户价格") {
+          const refBlock = document.createElement("div");
+          refBlock.className = "mode-ref-block";
+          refBlock.innerHTML = '<label class="label req">参考客户</label>';
+          const sel = document.createElement("select");
+          sel.className = "select mode-ref-customer";
+          fillRefCustomerSelect(sel, st.refCustomer);
+          sel.addEventListener("change", () => {
+            const s = normalizeCategoryState(cat);
+            s.refCustomer = sel.value || "";
+            categoryModeState[cat] = s;
+          });
+          refBlock.appendChild(sel);
+          row.appendChild(refBlock);
+        } else if (st.mode === "网站价格") {
+          const refBlock = document.createElement("div");
+          refBlock.className = "mode-ref-block";
+          refBlock.innerHTML = '<label class="label req">参考网站</label>';
+          const sel = document.createElement("select");
+          sel.className = "select mode-ref-website";
+          fillRefWebsiteSelect(sel, st.refWebsite);
+          sel.addEventListener("change", () => {
+            const s = normalizeCategoryState(cat);
+            s.refWebsite = sel.value || "";
+            categoryModeState[cat] = s;
+          });
+          refBlock.appendChild(sel);
+          row.appendChild(refBlock);
+        }
+
+        root.appendChild(row);
+      });
+    }
+    function syncDetailRowModeFromCategory() {
+      detailRows.forEach((r) => {
+        const mm = normalizeCategoryState(r.cat1).mode;
+        if (mm && !r.collabModeLocked) r.purchaseBenchmarkMode = mm;
+      });
+    }
+    function calcPurchaseBaseByMode(row) {
+      const mkt = Number(row && row.market);
+      const last = Number(row && row.lastSalesPrice);
+      if (!Number.isFinite(mkt) && !Number.isFinite(last)) return null;
+      const mode = String((row && row.purchaseBenchmarkMode) || "").trim();
+      if (mode === "参考现客户价格") {
+        if (Number.isFinite(last)) return last * 0.95;
+        return Number.isFinite(mkt) ? mkt * 0.98 : null;
+      }
+      if (mode === "网站价格") return Number.isFinite(mkt) ? mkt * 1.0 : null;
+      if (mode === "采购价格(有效且最低)") return Number.isFinite(mkt) ? mkt * 0.92 : null;
+      return Number.isFinite(mkt) ? mkt * 0.98 : null;
+    }
+    function recalcRow(r) {
+      const base = calcPurchaseBaseByMode(r);
+      r.purchaseBase = base != null ? base.toFixed(2) : "";
+      const add = Number(r.markupRate);
+      if (!r.purchaseConfirmTouched && base != null) {
+        const plus = Number.isFinite(add) ? add : 0;
+        r.purchaseConfirm = (base + plus).toFixed(2);
+      } else if (!r.purchaseConfirmTouched) {
+        r.purchaseConfirm = "";
+      }
+      const pc = Number(r.purchaseConfirm);
+      const rule = marginRule(r.cat1);
+      const hi = rule && Number.isFinite(Number(rule.maxMargin)) ? Number(rule.maxMargin) : null;
+      if (!r.salesConfirmTouched && Number.isFinite(pc) && hi != null) {
+        r.salesConfirm = (pc * (1 + hi / 100)).toFixed(2);
+      } else if (!r.salesConfirmTouched) {
+        r.salesConfirm = "";
+      }
+      const sc = Number(r.salesConfirm);
+      if (Number.isFinite(sc) && Number.isFinite(pc) && sc !== 0) r.confirmSalesMargin = (((sc - pc) / sc) * 100).toFixed(2) + "%";
+      else r.confirmSalesMargin = "";
+    }
+    function renderDetailSummaryBlock(r) {
+      return `
+        <div class="detail-summary detail-grid">
+          <div class="k">标准产品</div><div class="v">${escapeHtml(r.stdName || "-")}</div>
+          <div class="k">项目分类</div><div class="v">${escapeHtml(r.cat1 || "-")}</div>
+          <div class="k">采购确认价</div><div class="v">${escapeHtml(r.purchaseConfirm || "-")}</div>
+          <div class="k">销售确认价</div><div class="v">${escapeHtml(r.salesConfirm || "-")}</div>
+          <div class="k">确认毛利率</div><div class="v">${escapeHtml(r.confirmSalesMargin || "-")}</div>
+        </div>
+      `;
+    }
+    function renderDetailList() {
+      syncDetailRowModeFromCategory();
+      const root = $("detailList");
+      root.innerHTML = "";
+      detailRows.forEach((r, idx) => {
+        recalcRow(r);
+        const rule = marginRule(r.cat1);
+        const marginRange = rule ? (rule.minMargin + "% ~ " + rule.maxMargin + "%") : "-";
+        const collapsed = r.collapsed !== false;
+        const item = document.createElement("div");
+        item.className = "detail-item" + (collapsed ? " collapsed" : "");
+        item.innerHTML = `
+          <div class="detail-head" data-act="toggle" data-i="${idx}">
+            <div class="detail-title">${idx + 1}. ${escapeHtml(r.stdName || r.name || "未命名产品")}</div>
+            <span class="detail-head-actions">
+              <button type="button" class="detail-delete-btn" data-act="delete-row" data-i="${idx}" title="删除产品" aria-label="删除产品">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 9v8M15 9v8M5 6h14M10 6V4h4v2M7 6l1 14h8l1-14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <svg class="detail-fold-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+          ${renderDetailSummaryBlock(r)}
+          <div class="detail-body">
+            <div class="detail-edit-row"><label class="detail-edit-label req">客户产品名称</label><input class="detail-edit-input" value="${escapeAttr(r.name || "")}" data-i="${idx}" data-f="name"></div>
+            <div class="detail-edit-row"><label class="detail-edit-label">标准产品名称</label><div class="readonly-box">${escapeHtml(r.stdName || "-")}</div></div>
+            <div class="detail-edit-row"><label class="detail-edit-label">一级分类</label><div class="readonly-box">${escapeHtml(r.cat1 || "-")}</div></div>
+            <div class="detail-edit-row"><label class="detail-edit-label">是否益海</label><div class="readonly-box">${r.isYihai ? "是" : "否"}</div></div>
+            <div class="detail-edit-row">
+              <label class="detail-edit-label req">是否供货</label>
+              <select class="detail-edit-input" data-i="${idx}" data-f="supplyFlag" ${canEditDetailPrices(r, 'supplyFlag') ? '' : 'disabled'}>
+                <option value="是"${String(r.supplyFlag || "是").trim() !== "否" ? " selected" : ""}>是</option>
+                <option value="否"${String(r.supplyFlag || "").trim() === "否" ? " selected" : ""}>否</option>
+              </select>
+            </div>
+            <div class="detail-edit-row">
+              <label class="detail-edit-label req">协作模式</label>
+              <select class="detail-edit-input" data-i="${idx}" data-f="collabMode">
+                <option value="">请选择</option>
+                ${COLLAB_MODES.map((m) => `<option value="${escapeAttr(m)}"${r.collabMode === m ? " selected" : ""}>${escapeHtml(m)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="detail-edit-row">
+              <label class="detail-edit-label">单位</label>
+              <select class="detail-edit-input" data-i="${idx}" data-f="unit">
+                <option value="">请选择</option>
+                ${UNIT_OPTIONS.map((u) => `<option value="${escapeAttr(u)}"${r.unit === u ? " selected" : ""}>${escapeHtml(u)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="detail-grid">
+              <div class="k">基准价模式</div><div class="v">${escapeHtml(r.purchaseBenchmarkMode || "-")}</div>
+              <div class="k">市调价格</div><div class="v">${fmtMoney(r.market)}</div>
+              <div class="k">采购基准价</div><div class="v">${escapeHtml(r.purchaseBase || "-")}</div>
+              <div class="k">毛利区间</div><div class="v">${escapeHtml(marginRange)}</div>
+            </div>
+            <div class="detail-edit-row"><label class="detail-edit-label">采购加价幅度</label><input class="detail-edit-input" inputmode="decimal" value="${escapeAttr(r.markupRate || "")}" data-i="${idx}" data-f="markupRate" ${canEditDetailPrices(r, 'markupRate') ? '' : 'disabled'}></div>
+            <div class="detail-edit-row"><label class="detail-edit-label req">采购确认价</label><input class="detail-edit-input" inputmode="decimal" value="${escapeAttr(r.purchaseConfirm || "")}" data-i="${idx}" data-f="purchaseConfirm" ${canEditDetailPrices(r, 'purchaseConfirm') ? '' : 'disabled'}></div>
+            <div class="detail-edit-row"><label class="detail-edit-label req">销售确认价</label><input class="detail-edit-input" inputmode="decimal" value="${escapeAttr(r.salesConfirm || "")}" data-i="${idx}" data-f="salesConfirm" ${canEditDetailPrices(r, 'salesConfirm') ? '' : 'disabled'}></div>
+            <div class="detail-grid">
+              <div class="k">上次销售价</div><div class="v">${fmtMoney(r.lastSalesPrice)}</div>
+              <div class="k">确认销售毛利</div><div class="v">${escapeHtml(r.confirmSalesMargin || "-")}</div>
+              <div class="k">标准产品代码</div><div class="v">${escapeHtml(r.code || "-")}</div>
+            </div>
+          </div>
+        `;
+        root.appendChild(item);
+      });
+      root.querySelectorAll("input[data-i], select[data-i]").forEach((el) => {
+        const handler = () => {
+          const i = Number(el.getAttribute("data-i"));
+          const f = el.getAttribute("data-f");
+          if (!detailRows[i]) return;
+          detailRows[i][f] = el.value;
+          if (f === "purchaseConfirm") detailRows[i].purchaseConfirmTouched = true;
+          if (f === "salesConfirm") detailRows[i].salesConfirmTouched = true;
+          if (f === "markupRate" || f === "purchaseConfirm" || f === "salesConfirm" || f === "name" || f === "supplyFlag" || f === "collabMode" || f === "unit") renderDetailList();
+          refreshDetailHint();
+          updateMarginSummary();
+        };
+        el.addEventListener("input", handler);
+        el.addEventListener("change", handler);
+      });
+      root.querySelectorAll("select[data-i]").forEach((el) => {
+        el.addEventListener("change", () => {
+          const i = Number(el.getAttribute("data-i"));
+          const f = el.getAttribute("data-f");
+          if (!detailRows[i]) return;
+          detailRows[i][f] = el.value;
+          renderDetailList();
+          updateMarginSummary();
+        });
+      });
+      root.querySelectorAll('[data-act="toggle"]').forEach((el) => {
+        el.addEventListener("click", (e) => {
+          if (e.target && e.target.closest && e.target.closest('[data-act="delete-row"]')) return;
+          const i = Number(el.getAttribute("data-i"));
+          if (!detailRows[i]) return;
+          detailRows[i].collapsed = !detailRows[i].collapsed;
+          renderDetailList();
+        });
+      });
+      root.querySelectorAll('[data-act="delete-row"]').forEach((el) => {
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const i = Number(el.getAttribute("data-i"));
+          if (!detailRows[i]) return;
+          detailRows.splice(i, 1);
+          renderDetailList();
+          updateMarginSummary();
+        });
+      });
+      refreshDetailHint();
+      updateMarginSummary();
+    }
+    function refreshDetailHint() {
+      const hint = $("detailHint");
+      if (!hint) return;
+      hint.textContent = detailRows.length ? "" : "请先添加产品明细。";
+      hint.style.display = detailRows.length ? "none" : "";
+    }
+    function aggregateConfirmGrossMarginRate(rows, predicate) {
+      const matched = (rows || []).filter((r) => {
+        const pc = Number(r.purchaseConfirm);
+        const sc = Number(r.salesConfirm);
+        if (!Number.isFinite(pc) || !Number.isFinite(sc) || sc <= 0) return false;
+        return predicate ? predicate(r) : true;
+      });
+      if (!matched.length) return "—";
+      let totalSales = 0;
+      let totalDiff = 0;
+      matched.forEach((r) => {
+        const pc = Number(r.purchaseConfirm);
+        const sc = Number(r.salesConfirm);
+        totalSales += sc;
+        totalDiff += (sc - pc);
+      });
+      if (!totalSales) return "—";
+      return ((totalDiff / totalSales) * 100).toFixed(2) + "%";
+    }
+    function updateMarginSummary() {
+      const set = (id, val) => { $(id).textContent = val; };
+      const rows = detailRows.slice();
+      const collab = (r) => String(r.collabMode || "").trim();
+      set("marginSummaryYihaiDirect", aggregateConfirmGrossMarginRate(rows, (r) => !!r.isYihai && collab(r) === "供应商直送"));
+      set("marginSummaryYihaiWarehouse", aggregateConfirmGrossMarginRate(rows, (r) => !!r.isYihai && collab(r) === "大仓配送"));
+      set("marginSummaryNonYihaiDirect", aggregateConfirmGrossMarginRate(rows, (r) => !r.isYihai && collab(r) === "供应商直送"));
+      set("marginSummaryNonYihaiWarehouse", aggregateConfirmGrossMarginRate(rows, (r) => !r.isYihai && collab(r) === "大仓配送"));
+      set("marginSummaryTotal", aggregateConfirmGrossMarginRate(rows, null));
+    }
+    function getSelectedCats() {
+      return LV1.filter((cat) => {
+        const el = document.querySelector(`input[data-cat="${cat}"]`);
+        return el && el.checked;
+      });
+    }
+    function renderCategoryGrid() {
+      const root = $("categoryGrid");
+      root.innerHTML = "";
+      const catDisabled = isDetailMode() && state.docStatus !== '新建';
+      LV1.forEach((cat) => {
+        const lab = document.createElement("label");
+        lab.className = "chip";
+        lab.innerHTML = `<input type="checkbox" data-cat="${cat}"${catDisabled ? ' disabled' : ''}><span>${cat}</span>`;
+        const input = lab.querySelector("input");
+        input.checked = !!categoryModeState[cat];
+        if (input.checked) lab.classList.add("active");
+        input.addEventListener("change", () => {
+          if (input.checked) {
+            categoryModeState[cat] = normalizeCategoryState(cat);
+            if (!categoryModeState[cat].mode) categoryModeState[cat] = { mode: "", refCustomer: "", refWebsite: "" };
+          } else {
+            delete categoryModeState[cat];
+          }
+          refreshModeRows();
+          syncDetailRowModeFromCategory();
+          renderCategoryGrid();
+          renderDetailList();
+        });
+        root.appendChild(lab);
+      });
+    }
+    function renderSummary() {
+      $("sumOp").textContent = textOfSelect("opCompany") || "-";
+      $("sumDealer").textContent = textOfSelect("dealerCompany") || "-";
+      $("sumQuoteType").textContent = textOfSelect("quoteType") || "-";
+      $("sumCustomer").textContent = getCustomerName() || "-";
+      $("sumTitle").textContent = $("quoteTitle").value.trim() || "-";
+      $("sumProject").textContent = isAdhoc() ? ($("projectSiteName").value.trim() || "-") : (selectedProjects.length ? selectedProjects.join("、") : "-");
+      $("sumChannel").textContent = textOfSelect("customerChannel") || "-";
+      $("sumCustType").textContent = textOfSelect("customerType") || "-";
+      $("sumRange").textContent = ($("quoteStart").value || "-") + " ~ " + ($("quoteEnd").value || "-");
+    }
+    function validateBasic() {
+      if (!$("opCompany").value.trim()) return "请选择运营公司";
+      if (!$("dealerCompany").value.trim()) return "请选择经销商公司";
+      if (!$("quoteType").value.trim()) return "请选择报价类型";
+      if (!$("customerChannel").value.trim()) return "请选择客户渠道";
+      if (!$("customerType").value.trim()) return "请选择客户类型";
+      if (!getCustomerName()) return isAdhoc() ? "请输入客户名称" : "请选择客户名称";
+      const title = $("quoteTitle").value.trim();
+      if (!title) return "报价标题为必填项";
+      if (title.length > 200) return "报价标题不能超过 200 字";
+      if (!$("quoteStart").value || !$("quoteEnd").value) return "请填写报价开始、结束日期";
+      if ($("quoteEnd").value < $("quoteStart").value) return "报价结束日期不能早于开始日期";
+      return "";
+    }
+    function validateStep2() {
+      const basic = validateBasic();
+      if (basic) return basic;
+      const cats = getSelectedCats();
+      if (!cats.length) return "请至少选择一个报价品类";
+      for (let i = 0; i < cats.length; i++) {
+        const cat = cats[i];
+        const st = normalizeCategoryState(cat);
+        if (!st.mode) return `品类「${cat}」请选择一种采购基准价模式`;
+        if (st.mode === "参考现客户价格" && !(st.refCustomer || "").trim()) {
+          return `品类「${cat}」为参考现客户价格时请选择参考客户`;
+        }
+        if (st.mode === "网站价格" && !(st.refWebsite || "").trim()) {
+          return `品类「${cat}」为网站价格时请选择参考网站信息`;
+        }
+      }
+      return "";
+    }
+    function validateCategoryModesOnly() {
+      const cats = getSelectedCats();
+      if (!cats.length) return "请先选择报价品类";
+      for (let i = 0; i < cats.length; i++) {
+        const cat = cats[i];
+        const st = normalizeCategoryState(cat);
+        if (!st.mode) return `品类「${cat}」请选择一种采购基准价模式`;
+        if (st.mode === "参考现客户价格" && !(st.refCustomer || "").trim()) {
+          return `品类「${cat}」为参考现客户价格时请选择参考客户`;
+        }
+        if (st.mode === "网站价格" && !(st.refWebsite || "").trim()) {
+          return `品类「${cat}」为网站价格时请选择参考网站信息`;
+        }
+      }
+      return "";
+    }
+    function inferLoginRole() {
+      const st = getDocStatus();
+      if (st === '销售待确认') return 'sales';
+      if (st === '采购待确认') return 'purchase';
+      return 'sales';
+    }
+
+    function refreshStatusTags() {
+      $("docStatusTag").textContent = "单据状态：" + getDocStatus();
+      $("oaStatusTag").textContent = "OA：" + (state.oaStatus || "初始");
+      if ($("navTitle")) {
+        $("navTitle").textContent = isDetailMode() ? ("报价申请 " + state.id) : "新增报价申请";
+      }
+    }
+
+    function setFormReadonly(readonly) {
+      ["opCompany", "quoteType", "customerChannel", "customerType", "quoteTitle", "quoteStart", "quoteEnd", "remark", "customerName", "projectSiteName"].forEach((id) => {
+        const el = $(id);
+        if (el) el.disabled = readonly;
+      });
+      const dealer = $("dealerCompany");
+      if (dealer) dealer.disabled = true;
+    }
+
+    function applyReadonly() {
+      const st = getDocStatus();
+      const basicRo = isDetailMode() && st !== '新建';
+      setFormReadonly(basicRo);
+      refreshStatusTags();
+      updateActionBar();
+      renderDetailList();
+    }
+
+    function updateActionBar() {
+      const st = getDocStatus();
+      const detail = isDetailMode();
+      const wizard = !detail;
+      $("btnPrev").style.display = wizard && step === 2 ? "" : "none";
+      $("btnNext").style.display = wizard && step === 1 ? "" : "none";
+      $("btnFinish").style.display = (wizard && step === 2) || (detail && st !== '已审核' && st !== '作废') ? "" : "none";
+      $("btnSubmit").style.display = detail && st === '新建' ? "" : "none";
+      $("btnPurchaseConfirm").style.display = detail && st === '采购待确认' ? "" : "none";
+      $("btnPurchaseConfirm").disabled = detail && st === '采购待确认' && !isPurchaseSelf();
+      $("btnSalesConfirm").style.display = detail && st === '销售待确认' ? "" : "none";
+      $("btnSalesConfirm").disabled = detail && st === '销售待确认' && !isSalesSelf();
+      $("btnVoid").style.display = detail && st === '新建' ? "" : "none";
+      $("btnReturn").style.display = detail && (st === '采购待确认' || st === '销售待确认') ? "" : "none";
+    }
+
+    function buildDemoDetailRows(st) {
+      const mode = "市调价格";
+      const demoCats = ["米面油", "干调类", "冻品类"];
+      demoCats.forEach((cat) => {
+        categoryModeState[cat] = { mode, refCustomer: "", refWebsite: "" };
+      });
+      const rows = MOCK_PRODUCTS.filter((p) => demoCats.includes(p.cat1)).map((p) => {
+        const row = {
+          ...p,
+          name: p.name || p.stdName,
+          unit: p.spec.includes("kg") ? "袋" : "箱",
+          markupRate: st === '采购待确认' ? "2" : "2",
+          purchaseBase: "",
+          purchaseConfirm: st === '新建' ? "" : (p.market * 0.98 + 2).toFixed(2),
+          salesConfirm: (st === '销售待确认' || st === '已审核') ? (p.market * 1.15).toFixed(2) : "",
+          confirmSalesMargin: "",
+          purchaseBenchmarkMode: mode,
+          collapsed: true,
+          purchaseConfirmTouched: st !== '新建',
+          salesConfirmTouched: st === '销售待确认' || st === '已审核',
+          supplyFlag: p.code === "P003" && st === '采购待确认' ? "否" : "是"
+        };
+        recalcRow(row);
+        if (st === '销售待确认' || st === '已审核') {
+          const pc = Number(row.purchaseConfirm);
+          const sc = Number(row.salesConfirm);
+          if (Number.isFinite(sc) && sc !== 0 && Number.isFinite(pc)) {
+            row.confirmSalesMargin = (((sc - pc) / sc) * 100).toFixed(2) + "%";
+          }
+        }
+        return row;
+      });
+      return rows;
+    }
+
+    function loadMockDocument(preset) {
+      const seed = Object.assign({
+        id: 'BF202603180001',
+        docStatus: '采购待确认',
+        oaStatus: '初始',
+        opCompany: '丰厨(上海)供应链管理有限公司',
+        quoteType: '常规报价',
+        customerChannel: '团餐及大众餐饮',
+        customerType: '团餐公司',
+        customerIds: ['c12'],
+        projects: ['沪上-张江项目', '沪上-闵行项目'],
+        quoteTitle: '沪上团餐服务中心2026-03-012026-04-01销售报价',
+        quoteStart: '2026-03-01',
+        quoteEnd: '2026-04-01',
+        remark: ''
+      }, preset || {});
+      state.id = seed.id;
+      state.docStatus = seed.docStatus;
+      state.oaStatus = seed.oaStatus;
+      $("opCompany").value = seed.opCompany;
+      bindDealer();
+      $("quoteType").value = seed.quoteType;
+      $("customerChannel").value = seed.customerChannel;
+      populateCustomerTypeOptions();
+      $("customerType").value = seed.customerType;
+      syncQuoteTypeUI();
+      selectedCustomerIds = seed.customerIds || [];
+      selectedProjects = seed.projects || [];
+      renderCustomerMultiSelect();
+      renderProjectMultiSelect();
+      $("quoteTitle").value = seed.quoteTitle;
+      quoteTitleManuallyEdited = true;
+      $("quoteStart").value = seed.quoteStart;
+      $("quoteEnd").value = seed.quoteEnd;
+      $("remark").value = seed.remark || '';
+      categoryModeState = {};
+      detailRows = buildDemoDetailRows(seed.docStatus);
+      step = 2;
+      updateStepUI();
+      applyReadonly();
+    }
+
+    function validateConfirmPrices(kind) {
+      for (let i = 0; i < detailRows.length; i++) {
+        const r = detailRows[i];
+        const excluded = rowSupplyExcluded(r);
+        if (kind === 'purchase' || kind === 'both') {
+          const pc = Number(r.purchaseConfirm);
+          if (!String(r.purchaseConfirm || '').trim()) return `第${i + 1}行：采购确认价为必填项`;
+          if (!Number.isFinite(pc) || pc < 0) return `第${i + 1}行：采购确认价格式不正确`;
+          if (!excluded && pc === 0) return `第${i + 1}行：是否供货为「是」时采购确认价须大于 0`;
+        }
+        if (kind === 'sales' || kind === 'both') {
+          const sc = Number(r.salesConfirm);
+          if (!String(r.salesConfirm || '').trim()) return `第${i + 1}行：销售确认价为必填项`;
+          if (!Number.isFinite(sc) || sc < 0) return `第${i + 1}行：销售确认价格式不正确`;
+          if (!excluded && sc <= 0) return `第${i + 1}行：是否供货为「是」时销售确认价须大于 0`;
+        }
+      }
+      return '';
+    }
+
+    function onSave() {
+      const err = step === 1 ? validateBasic() : validateStep2();
+      if (err) return alert(err);
+      alert('保存成功');
+    }
+    function onSubmitAudit() {
+      const err = validateStep2();
+      if (err) return alert(err);
+      if (!detailRows.length) return alert('请至少添加一条产品明细');
+      state.docStatus = '采购待确认';
+      state.loginRole = inferLoginRole();
+      applyReadonly();
+      alert('提交审核成功：单据状态 → 采购待确认');
+    }
+    function onPurchaseConfirm() {
+      if (!isPurchaseSelf()) return alert('仅采购经办人（王采购）可执行采购确认');
+      const err = validateConfirmPrices('purchase');
+      if (err) return alert(err);
+      state.docStatus = '销售待确认';
+      state.loginRole = inferLoginRole();
+      detailRows.forEach((r) => {
+        if (!r.salesConfirmTouched) recalcRow(r);
+      });
+      applyReadonly();
+      alert('采购确认完成：单据状态 → 销售待确认');
+    }
+    function onSalesConfirm() {
+      if (!isSalesSelf()) return alert('仅销售经办人（张销售）可执行销售确认');
+      const err = validateConfirmPrices('both');
+      if (err) return alert(err);
+      state.docStatus = '已审核';
+      state.oaStatus = '初始';
+      state.loginRole = inferLoginRole();
+      applyReadonly();
+      alert('销售确认完成：单据状态 → 已审核');
+    }
+    function onVoidDoc() {
+      if (!confirm('确认作废该报价申请？')) return;
+      state.docStatus = '作废';
+      applyReadonly();
+      alert('单据已作废（终态）');
+    }
+    function onReturnDoc() {
+      if (state.docStatus === '销售待确认') {
+        state.docStatus = '采购待确认';
+        alert('已退回至采购待确认');
+      } else if (state.docStatus === '采购待确认') {
+        state.docStatus = '新建';
+        alert('已退回至新建');
+      }
+      state.loginRole = inferLoginRole();
+      applyReadonly();
+    }
+
+    function updateStepUI() {
+      $("panel1").classList.toggle("hidden", step !== 1);
+      $("panel2").classList.toggle("hidden", step !== 2);
+      $("s1").classList.toggle("active", step === 1);
+      $("s2").classList.toggle("active", step === 2);
+      if (step === 2) {
+        renderSummary();
+        renderCategoryGrid();
+        refreshModeRows();
+        renderDetailList();
+      }
+      updateActionBar();
+      refreshStatusTags();
+    }
+    function goNext() {
+      const e = validateBasic();
+      if (e) return alert(e);
+      step = 2;
+      updateStepUI();
+    }
+    function goPrev() {
+      if (step === 2) {
+        step = 1;
+        updateStepUI();
+      }
+    }
+    function matchProductByNameHint(nameHint) {
+      const kw = String(nameHint || "").trim();
+      if (!kw) return null;
+      let best = null;
+      let bestScore = 0;
+      MOCK_PRODUCTS.forEach((p) => {
+        const candidates = [p.stdName, p.name, p.brand].filter(Boolean);
+        candidates.forEach((c) => {
+          const score = c.includes(kw) || kw.includes(c) ? Math.min(c.length, kw.length) : 0;
+          if (score > bestScore) {
+            bestScore = score;
+            best = p;
+          }
+        });
+      });
+      return best;
+    }
+    function addEmptyDetailRow() {
+      const modeErr = validateCategoryModesOnly();
+      if (modeErr) return alert(modeErr);
+      const preset = NEW_DETAIL_MOCK[newDetailMockIndex % NEW_DETAIL_MOCK.length];
+      newDetailMockIndex += 1;
+      const matched = matchProductByNameHint(preset.name);
+      const row = {
+        code: matched ? matched.code : ("NEW_" + Date.now() + "_" + detailRows.length),
+        stdName: matched ? matched.stdName : "",
+        brand: matched ? matched.brand : "",
+        spec: matched ? matched.spec : "",
+        cat1: matched ? matched.cat1 : "",
+        market: matched ? matched.market : null,
+        lastSalesPrice: matched && Number.isFinite(Number(matched.lastSalesPrice)) ? matched.lastSalesPrice : "",
+        isYihai: matched ? !!matched.isYihai : false,
+        name: preset.name || "",
+        unit: matched ? (matched.spec.includes("kg") ? "袋" : "箱") : "",
+        markupRate: "",
+        purchaseBase: "",
+        purchaseConfirm: "",
+        salesConfirm: "",
+        confirmSalesMargin: "",
+        purchaseBenchmarkMode: matched && categoryModeState[matched.cat1] ? normalizeCategoryState(matched.cat1).mode : "",
+        collapsed: false,
+        purchaseConfirmTouched: false,
+        salesConfirmTouched: false,
+        supplyFlag: "是",
+        collabMode: preset.collabMode || (matched && matched.collabMode) || "大仓配送"
+      };
+      detailRows.push(row);
+      renderDetailList();
+    }
+    function goProductPickerPage() {
+      const modeErr = validateCategoryModesOnly();
+      if (modeErr) return alert(modeErr);
+      savePageDraft();
+      sessionStorage.setItem("quoteProductPickerContext", JSON.stringify({
+        selectedCats: getSelectedCats(),
+        selectedCodes: detailRows.map((x) => x.code).filter(Boolean)
+      }));
+      sessionStorage.setItem("quoteReturnToStep2", "1");
+      location.href = "PRD.Quote-Request-Mobile-Select-Product.html";
+    }
+    function addProductsFromPicker(products) {
+      const cats = getSelectedCats();
+      const codes = new Set(detailRows.map((x) => x.code));
+      (products || []).forEach((p) => {
+        if (codes.has(p.code)) return;
+        detailRows.push({
+          ...p,
+          name: p.name || p.stdName,
+          unit: p.spec && p.spec.includes("kg") ? "袋" : "箱",
+          markupRate: "",
+          purchaseBase: "",
+          purchaseConfirm: "",
+          salesConfirm: "",
+          confirmSalesMargin: "",
+          purchaseBenchmarkMode: normalizeCategoryState(p.cat1).mode || "",
+          collapsed: true,
+          purchaseConfirmTouched: false,
+          salesConfirmTouched: false,
+          supplyFlag: "是",
+          collabMode: p.collabMode || "大仓配送"
+        });
+        codes.add(p.code);
+      });
+      renderDetailList();
+    }
+    function savePageDraft() {
+      sessionStorage.setItem("quoteApplyMobileDraft", JSON.stringify({
+        step,
+        form: {
+          opCompany: $("opCompany").value,
+          quoteType: $("quoteType").value,
+          customerChannel: $("customerChannel").value,
+          customerType: $("customerType").value,
+          customerName: $("customerName").value,
+          quoteTitle: $("quoteTitle").value,
+          quoteStart: $("quoteStart").value,
+          quoteEnd: $("quoteEnd").value,
+          remark: $("remark").value
+        },
+        selectedCustomerIds,
+        selectedProjects,
+        quoteTitleManuallyEdited,
+        categoryModeState,
+        detailRows,
+        stateSnapshot: { id: state.id, docStatus: state.docStatus, oaStatus: state.oaStatus }
+      }));
+    }
+    function consumePageDraft() {
+      const raw = sessionStorage.getItem("quoteApplyMobileDraft");
+      if (!raw) return;
+      try {
+        const d = JSON.parse(raw);
+        if (!d || typeof d !== "object") return;
+        if (d.form) {
+          if (d.form.opCompany != null) $("opCompany").value = d.form.opCompany;
+          bindDealer();
+          if (d.form.quoteType != null) $("quoteType").value = d.form.quoteType;
+          if (d.form.customerChannel != null) $("customerChannel").value = d.form.customerChannel;
+          populateCustomerTypeOptions();
+          if (d.form.customerType != null) $("customerType").value = d.form.customerType;
+          syncQuoteTypeUI();
+          if (d.form.customerName != null) $("customerName").value = d.form.customerName;
+          if (d.form.quoteTitle != null) $("quoteTitle").value = d.form.quoteTitle;
+          if (d.form.quoteStart != null) $("quoteStart").value = d.form.quoteStart;
+          if (d.form.quoteEnd != null) $("quoteEnd").value = d.form.quoteEnd;
+          if (d.form.remark != null) $("remark").value = d.form.remark;
+        }
+        if (Array.isArray(d.selectedCustomerIds)) selectedCustomerIds = d.selectedCustomerIds;
+        if (Array.isArray(d.selectedProjects)) selectedProjects = d.selectedProjects;
+        if (typeof d.quoteTitleManuallyEdited === "boolean") quoteTitleManuallyEdited = d.quoteTitleManuallyEdited;
+        categoryModeState = d.categoryModeState && typeof d.categoryModeState === "object" ? d.categoryModeState : {};
+        detailRows = Array.isArray(d.detailRows) ? d.detailRows : [];
+        if (d.stateSnapshot && typeof d.stateSnapshot === "object") {
+          if (d.stateSnapshot.id != null) state.id = d.stateSnapshot.id;
+          if (d.stateSnapshot.docStatus != null) state.docStatus = d.stateSnapshot.docStatus;
+          if (d.stateSnapshot.oaStatus != null) state.oaStatus = d.stateSnapshot.oaStatus;
+        }
+        if (Number.isFinite(Number(d.step))) step = Number(d.step);
+        renderCustomerMultiSelect();
+        renderProjectMultiSelect();
+      } catch (e) {
+        // ignore malformed draft in prototype mode
+      }
+    }
+    function consumePickerResult() {
+      const raw = sessionStorage.getItem("quoteProductPickerResult");
+      if (!raw) return;
+      sessionStorage.removeItem("quoteProductPickerResult");
+      try {
+        const parsed = JSON.parse(raw);
+        const list = Array.isArray(parsed && parsed.products) ? parsed.products : [];
+        if (list.length) addProductsFromPicker(list);
+      } catch (e) {
+        // ignore malformed data in prototype mode
+      }
+    }
+    function consumeReturnStepFlag() {
+      if (sessionStorage.getItem("quoteReturnToStep2") === "1") {
+        sessionStorage.removeItem("quoteReturnToStep2");
+        step = 2;
+      }
+    }
+    function goFinish() {
+      const e2 = step === 1 ? validateBasic() : validateStep2();
+      if (e2) return alert(e2);
+      if (isDetailMode()) {
+        alert('保存成功');
+        return;
+      }
+      state.id = 'BF' + String(Date.now()).slice(-8);
+      state.docStatus = '新建';
+      step = 2;
+      applyReadonly();
+      alert('保存成功');
+    }
+    function goCancelList() {
+      const listForIndex = "../../requirements/销售管理/报价申请/PRD.Quote-Request-List-Mobile.html";
+      const listForSelf = "PRD.Quote-Request-List-Mobile.html";
+      if (window.parent && window.parent !== window && typeof window.parent.openTab === "function") {
+        window.parent.openTab("报价申请列表", listForIndex);
+        return;
+      }
+      window.location.href = listForSelf;
+    }
+
+    function initBasic() {
+      bindDealer();
+      populateCustomerTypeOptions();
+      $("opCompany").addEventListener("change", () => {
+        bindDealer();
+        updateQuoteTitle(false);
+        refreshModeRows();
+      });
+      $("quoteType").addEventListener("change", syncQuoteTypeUI);
+      $("customerName").addEventListener("input", () => updateQuoteTitle(false));
+      $("customerChannel").addEventListener("change", () => {
+        populateCustomerTypeOptions();
+        $("customerType").value = "";
+        clearCustomerSelection();
+        refreshModeRows();
+      });
+      $("customerType").addEventListener("change", () => {
+        if (!isAdhoc()) clearCustomerSelection();
+        refreshModeRows();
+      });
+      $("quoteTitle").addEventListener("input", () => { quoteTitleManuallyEdited = true; });
+      $("quoteStart").addEventListener("change", () => updateQuoteTitle(false));
+      $("quoteEnd").addEventListener("change", () => updateQuoteTitle(false));
+      const t = new Date();
+      const iso = (d) => d.toISOString().slice(0, 10);
+      $("quoteStart").value = iso(t);
+      const end = new Date(t);
+      end.setMonth(end.getMonth() + 1);
+      $("quoteEnd").value = iso(end);
+      $("opCompany").value = "丰厨(上海)供应链管理有限公司";
+      bindDealer();
+      $("quoteType").value = "常规报价";
+      $("customerChannel").value = "团餐及大众餐饮";
+      syncQuoteTypeUI();
+      $("customerType").value = "团餐公司";
+      selectedCustomerIds = ["c12"];
+      renderCustomerMultiSelect();
+      renderProjectMultiSelect();
+      $("customerMultiHead").addEventListener("click", (e) => {
+        if (isAdhoc()) return;
+        if (e.target && e.target.id === "customerMultiInput") {
+          openMultiPanel("customerMultiPanel", "customerMultiArrow", "customerMultiSelect");
+          return;
+        }
+        toggleMultiPanel("customerMultiPanel", "customerMultiArrow", "customerMultiSelect");
+        $("customerMultiInput").focus();
+        $("customerMultiInput").select();
+      });
+      $("projectMultiHead").addEventListener("click", (e) => {
+        if (isAdhoc()) return;
+        if (e.target && e.target.id === "projectMultiInput") {
+          openMultiPanel("projectMultiPanel", "projectMultiArrow", "projectMultiSelect");
+          return;
+        }
+        toggleMultiPanel("projectMultiPanel", "projectMultiArrow", "projectMultiSelect");
+        $("projectMultiInput").focus();
+        $("projectMultiInput").select();
+      });
+      $("customerMultiInput").addEventListener("focus", () => openMultiPanel("customerMultiPanel", "customerMultiArrow", "customerMultiSelect"));
+      $("customerMultiInput").addEventListener("input", () => {
+        customerSearchKeyword = $("customerMultiInput").value.trim();
+        renderCustomerMultiSelect();
+        openMultiPanel("customerMultiPanel", "customerMultiArrow", "customerMultiSelect");
+      });
+      $("customerMultiInput").addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          customerSearchKeyword = "";
+          renderCustomerMultiSelect();
+          openMultiPanel("customerMultiPanel", "customerMultiArrow", "customerMultiSelect");
+          e.preventDefault();
+        }
+      });
+      $("projectMultiInput").addEventListener("focus", () => openMultiPanel("projectMultiPanel", "projectMultiArrow", "projectMultiSelect"));
+      $("projectMultiInput").addEventListener("input", () => {
+        projectSearchKeyword = $("projectMultiInput").value.trim();
+        renderProjectMultiSelect();
+        openMultiPanel("projectMultiPanel", "projectMultiArrow", "projectMultiSelect");
+      });
+      $("projectMultiInput").addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          projectSearchKeyword = "";
+          renderProjectMultiSelect();
+          openMultiPanel("projectMultiPanel", "projectMultiArrow", "projectMultiSelect");
+          e.preventDefault();
+        }
+      });
+      updateQuoteTitle(true);
+      if (!Object.keys(categoryModeState).length) {
+        ["米面油", "干调类"].forEach((cat) => {
+          categoryModeState[cat] = { mode: PURCHASE_MODE_OPTIONS[0], refCustomer: "", refWebsite: "" };
+        });
+      }
+      refreshStatusTags();
+    }
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+    function escapeAttr(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    }
+    initBasic();
+    consumePageDraft();
+    consumeReturnStepFlag();
+    consumePickerResult();
+    if (isDetailMode()) {
+      state.loginRole = inferLoginRole();
+      const preset = {
+        id: state.id,
+        docStatus: state.docStatus,
+        oaStatus: state.oaStatus
+      };
+      if (state.id === 'BF202603180006') {
+        Object.assign(preset, {
+          quoteTitle: '北京某某高校食堂2026-03-062026-03-12销售报价',
+          customerIds: ['c29'],
+          projects: ['央厨-北京顺义项目'],
+          opCompany: '丰厨(北京)供应链管理有限公司',
+          quoteStart: '2026-03-06',
+          quoteEnd: '2026-03-12'
+        });
+      }
+      if (state.id === 'BF202603180002') {
+        Object.assign(preset, {
+          opCompany: '丰厨(北京)供应链管理有限公司',
+          quoteTitle: '北京某某酒店2026-03-052026-04-05销售报价',
+          customerIds: ['c2'],
+          projects: ['北京-总部项目'],
+          quoteStart: '2026-03-05',
+          quoteEnd: '2026-04-05'
+        });
+      }
+      loadMockDocument(preset);
+      state.loginRole = inferLoginRole();
+    } else {
+      state.loginRole = inferLoginRole();
+      updateStepUI();
+      applyReadonly();
+    }
+  </script>
+</body>
+</html>

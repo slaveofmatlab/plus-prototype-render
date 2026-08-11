@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>选择产品（报价申请手机端）</title>
+  <style>
+    :root {
+      --sfa-primary: #1B766C;
+      --sfa-text-primary: #000;
+      --sfa-text-secondary: #666;
+      --sfa-text-tertiary: #999;
+      --sfa-divider: #eee;
+      --sfa-bg-page: #f6f6f8;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(165deg, #c5cad3 0%, #9ca3af 45%, #6b7280 100%);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .phone {
+      width: 375px;
+      height: min(812px, calc(100dvh - 96px));
+      border-radius: 34px;
+      overflow: hidden;
+      background: var(--sfa-bg-page);
+      border: 10px solid #252527;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background: #fff;
+      border-bottom: 1px solid var(--sfa-divider);
+      padding-top: var(--safe-top);
+      flex-shrink: 0;
+    }
+    .nav {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+    }
+    .btn-nav {
+      min-width: 44px;
+      height: 44px;
+      border: none;
+      background: transparent;
+      color: var(--sfa-primary);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .title { font-size: 16px; font-weight: 650; }
+    .search-wrap { padding: 8px 12px 10px; }
+    .search {
+      width: 100%;
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      background: #f2f2f2;
+      padding: 0 10px;
+      font-size: 14px;
+      outline: none;
+    }
+    .main {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      overflow: hidden;
+    }
+    .cat-pane {
+      border-right: 1px solid var(--sfa-divider);
+      background: #fafafa;
+      overflow: auto;
+      padding: 8px 6px;
+    }
+    .cat-item {
+      width: 100%;
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--sfa-text-secondary);
+      padding: 8px 6px;
+      text-align: left;
+      cursor: pointer;
+      margin-bottom: 6px;
+    }
+    .cat-item.active {
+      background: #eaf6f4;
+      color: var(--sfa-primary);
+      border-color: #cde9e5;
+      font-weight: 600;
+    }
+    .list-pane {
+      padding: 8px 10px;
+      overflow: auto;
+    }
+    .row {
+      background: #fff;
+      border: 1px solid var(--sfa-divider);
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--sfa-primary);
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    .name { font-size: 12px; color: var(--sfa-text-primary); font-weight: 600; line-height: 1.4; }
+    .meta { font-size: 12px; color: var(--sfa-text-secondary); line-height: 1.4; margin-top: 2px; }
+    .price { font-size: 11px; color: var(--sfa-text-tertiary); margin-top: 2px; }
+    .empty { font-size: 12px; color: var(--sfa-text-tertiary); text-align: center; padding: 24px 8px; }
+    .footer {
+      flex-shrink: 0;
+      background: #fff;
+      border-top: 1px solid var(--sfa-divider);
+      padding: 10px 12px calc(10px + var(--safe-bottom));
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      height: 40px;
+      border-radius: 20px;
+      border: 1px solid var(--sfa-divider);
+      background: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .btn.primary {
+      background: var(--sfa-primary);
+      border-color: var(--sfa-primary);
+      color: #fff;
+    }
+    .picked-count {
+      font-size: 12px;
+      color: var(--sfa-text-secondary);
+      text-align: center;
+      padding: 0 12px 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="header">
+      <div class="nav">
+        <button class="btn-nav" type="button" onclick="goBack()">返回</button>
+        <div class="title">选择产品</div>
+        <button class="btn-nav" type="button" onclick="resetSelection()">重置</button>
+      </div>
+      <div class="search-wrap">
+        <input id="kw" class="search" placeholder="按标准产品名称搜索" />
+      </div>
+      <div class="picked-count" id="pickedCount">已选 0 项</div>
+    </div>
+    <div class="main">
+      <div class="cat-pane" id="catPane"></div>
+      <div class="list-pane" id="listPane"></div>
+    </div>
+    <div class="footer">
+      <button class="btn" type="button" onclick="goBack()">取消</button>
+      <button class="btn primary" type="button" onclick="confirmPick()">确定添加</button>
+    </div>
+  </div>
+
+  <script>
+    /** 与 PRD.Quote-Request-New.html 产品库同源（18 条） */
+    const MOCK_PRODUCTS = [
+      { code: "P001", stdName: "特精小麦粉（标准）", name: "特精小麦粉", brand: "香满园", spec: "25kg/袋", cat1: "米面油", market: 89, lastSalesPrice: 91.5, isYihai: true, collabMode: "大仓配送" },
+      { code: "P002", stdName: "金龙鱼大豆油一级5L×4（标准）", name: "金龙鱼大豆油一级", brand: "金龙鱼", spec: "5L×4", cat1: "米面油", market: 268, lastSalesPrice: 273.0, isYihai: true, collabMode: "供应商直送" },
+      { code: "P003", stdName: "生抽酱油1.8L×6（标准）", name: "生抽酱油", brand: "海皇", spec: "1.8L×6", cat1: "干调类", market: 42, lastSalesPrice: 41.0, isYihai: false, collabMode: "供应商直送" },
+      { code: "P004", stdName: "速冻水饺500g（标准）", name: "速冻水饺", brand: "丰厨", spec: "500g×20", cat1: "冻品类", market: 156, lastSalesPrice: 160.0, isYihai: false, collabMode: "大仓配送" },
+      { code: "P005", stdName: "调理鸡腿肉10kg（标准）", name: "调理鸡腿肉", brand: "丰厨", spec: "10kg/箱", cat1: "调理类", market: 198, lastSalesPrice: 203.0, isYihai: true, collabMode: "大仓配送" },
+      { code: "P006", stdName: "土豆净菜5kg（标准）", name: "土豆（净菜）", brand: "—", spec: "5kg/袋", cat1: "蔬菜类", market: 18, lastSalesPrice: 18.6, isYihai: false, collabMode: "供应商直送" },
+      { code: "P007", stdName: "薯片组合装（标准）", name: "薯片组合装", brand: "休闲品牌X", spec: "组合", cat1: "休闲食品", market: 35, lastSalesPrice: 36.0, isYihai: false, collabMode: "大仓配送" },
+      { code: "P008", stdName: "纯净水550ml×24（标准）", name: "纯净水", brand: "品牌Y", spec: "550ml×24", cat1: "饮料", market: 22, lastSalesPrice: 22.5, isYihai: false, collabMode: "大仓配送" },
+      { code: "P009", stdName: "金龙鱼食用植物调和油5L×4（标准）", name: "金龙鱼调和油", brand: "金龙鱼", spec: "5L×4", cat1: "米面油", market: 312, lastSalesPrice: 318.0, isYihai: true, collabMode: "供应商直送" },
+      { code: "P010", stdName: "金龙鱼稻米油1.8L×6（标准）", name: "金龙鱼稻米油", brand: "金龙鱼", spec: "1.8L×6", cat1: "米面油", market: 128, lastSalesPrice: 131.0, isYihai: true, collabMode: "大仓配送" },
+      { code: "P011", stdName: "金龙鱼芝麻油400ml×12（标准）", name: "金龙鱼芝麻油", brand: "金龙鱼", spec: "400ml×12", cat1: "干调类", market: 56, lastSalesPrice: 57.5, isYihai: true, collabMode: "供应商直送" },
+      { code: "P012", stdName: "陈醋500ml×12（标准）", name: "陈醋", brand: "地方品牌", spec: "500ml×12", cat1: "干调类", market: 38, lastSalesPrice: 39.0, isYihai: false, collabMode: "大仓配送" },
+      { code: "P013", stdName: "金龙鱼饺子粉2.5kg×6（标准）", name: "金龙鱼饺子粉", brand: "金龙鱼", spec: "2.5kg×6", cat1: "米面油", market: 95, lastSalesPrice: 97.0, isYihai: true, collabMode: "大仓配送" },
+      { code: "P014", stdName: "冻品青虾仁1kg×10（标准）", name: "青虾仁", brand: "海产牌", spec: "1kg×10", cat1: "冻品类", market: 220, lastSalesPrice: 225.0, isYihai: false, collabMode: "供应商直送" },
+      { code: "P015", stdName: "金龙鱼花生浓香调和油4L（标准）", name: "金龙鱼花生调和油", brand: "金龙鱼", spec: "4L×4", cat1: "米面油", market: 285, lastSalesPrice: 290.0, isYihai: true, collabMode: "供应商直送" },
+      { code: "P016", stdName: "内酯豆腐350g×24（标准）", name: "内酯豆腐", brand: "豆香园", spec: "350g×24", cat1: "豆制品", market: 48, lastSalesPrice: 49.0, isYihai: false, collabMode: "大仓配送" },
+      { code: "P017", stdName: "鲜鸡蛋30枚/托（标准）", name: "鲜鸡蛋", brand: "禽蛋直供", spec: "30枚/托", cat1: "禽蛋类", market: 32, lastSalesPrice: 33.0, isYihai: false, collabMode: "供应商直送" },
+      { code: "P018", stdName: "金龙鱼玉米胚芽油900ml×15（标准）", name: "金龙鱼玉米油", brand: "金龙鱼", spec: "900ml×15", cat1: "米面油", market: 175, lastSalesPrice: 178.0, isYihai: true, collabMode: "大仓配送" }
+    ];
+
+    let selectedCats = [];
+    let activeCat = "全部";
+    let checked = new Set();
+
+    function parseContext() {
+      try {
+        const raw = sessionStorage.getItem("quoteProductPickerContext");
+        const obj = raw ? JSON.parse(raw) : {};
+        selectedCats = Array.isArray(obj.selectedCats) ? obj.selectedCats : [];
+        (Array.isArray(obj.selectedCodes) ? obj.selectedCodes : []).forEach((c) => checked.add(c));
+      } catch (e) {
+        selectedCats = [];
+      }
+    }
+
+    function getCats() {
+      const cats = selectedCats.length ? selectedCats : Array.from(new Set(MOCK_PRODUCTS.map((x) => x.cat1)));
+      return ["全部"].concat(cats);
+    }
+
+    function updatePickedCount() {
+      document.getElementById("pickedCount").textContent = "已选 " + checked.size + " 项";
+    }
+
+    function renderCats() {
+      const root = document.getElementById("catPane");
+      root.innerHTML = "";
+      getCats().forEach((c) => {
+        const btn = document.createElement("button");
+        btn.className = "cat-item" + (c === activeCat ? " active" : "");
+        btn.textContent = c;
+        btn.onclick = () => {
+          activeCat = c;
+          renderCats();
+          renderList();
+        };
+        root.appendChild(btn);
+      });
+    }
+
+    function filteredList() {
+      const kw = (document.getElementById("kw").value || "").trim();
+      return MOCK_PRODUCTS.filter((p) => {
+        if (selectedCats.length && !selectedCats.includes(p.cat1)) return false;
+        if (activeCat !== "全部" && p.cat1 !== activeCat) return false;
+        if (kw && !String(p.stdName || "").includes(kw) && !String(p.name || "").includes(kw)) return false;
+        return true;
+      });
+    }
+
+    function renderList() {
+      const root = document.getElementById("listPane");
+      const list = filteredList();
+      root.innerHTML = "";
+      if (!list.length) {
+        root.innerHTML = '<div class="empty">暂无匹配产品</div>';
+        updatePickedCount();
+        return;
+      }
+      list.forEach((p) => {
+        const row = document.createElement("label");
+        row.className = "row";
+        row.innerHTML = `
+          <input type="checkbox" data-code="${p.code}" ${checked.has(p.code) ? "checked" : ""} />
+          <span>
+            <div class="name">${p.stdName}</div>
+            <div class="meta">${p.cat1} · ${p.brand} · ${p.spec}${p.isYihai ? " · 益海" : ""}</div>
+            <div class="price">市调 ${p.market} · 上次销售 ${p.lastSalesPrice}</div>
+          </span>
+        `;
+        const cb = row.querySelector("input");
+        cb.onchange = () => {
+          if (cb.checked) checked.add(p.code);
+          else checked.delete(p.code);
+          updatePickedCount();
+        };
+        root.appendChild(row);
+      });
+      updatePickedCount();
+    }
+
+    function goBack() {
+      location.href = "PRD.Quote-Request-Mobile.html";
+    }
+
+    function resetSelection() {
+      checked.clear();
+      renderList();
+    }
+
+    function confirmPick() {
+      const products = MOCK_PRODUCTS.filter((p) => checked.has(p.code));
+      sessionStorage.setItem("quoteProductPickerResult", JSON.stringify({ products }));
+      goBack();
+    }
+
+    parseContext();
+    renderCats();
+    renderList();
+    document.getElementById("kw").addEventListener("input", renderList);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#F6F6F8" />
+  <title>报价申请列表（手机端）</title>
+  <style>
+    /* 益分销企微版 H5 · 见 sfa-wechat work.md（375 基准、PingFangSC、品牌/语义色） */
+    :root {
+      --sfa-primary: #1B766C;
+      --sfa-primary-pressed: #003932;
+      --sfa-primary-light: #DAF7F4;
+      --sfa-status-blue: #577EF2;
+      --sfa-status-red: #FF6565;
+      --sfa-status-green: #1B766C;
+      --sfa-text-primary: #000000;
+      --sfa-text-secondary: #666666;
+      --sfa-text-tertiary: #999999;
+      --sfa-text-link: #1B766C;
+      --sfa-divider: #EEEEEE;
+      --sfa-bg-page: #F6F6F8;
+      --sfa-bg-card: #FFFFFF;
+      --sfa-bg-input: #F6F6F6;
+      --sfa-bg-tab-container: #F6F6F8;
+      --sfa-font-zh: 'PingFangSC-Regular', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      --sfa-font-num: 'ArialMT', 'Arial', sans-serif;
+      --sfa-radius-card: 12px;
+      --sfa-radius-filter-sheet: 20px;
+      --sfa-shadow-card: 0px 2px 12px rgba(0, 0, 0, 0.039);
+      --sfa-shadow-filter-panel: 0px 1px 8px rgba(0, 0, 0, 0.078);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html { -webkit-tap-highlight-color: transparent; }
+
+    body.filter-open {
+      overflow: hidden;
+    }
+
+    /* 桌面预览：手机模拟外框（375 内容宽 + 边框） */
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(165deg, #c5cad3 0%, #9ca3af 45%, #6b7280 100%);
+      color: var(--sfa-text-primary);
+      font-family: var(--sfa-font-zh);
+      font-size: 16px;
+      font-weight: 400;
+    }
+
+    .phone-mock-wrap {
+      flex: 0 0 auto;
+      filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.28));
+    }
+
+    .phone-mock {
+      position: relative;
+      padding: 10px;
+      border-radius: 44px;
+      /* 裁剪屏幕圆角外内容，避免滚动条或子层溢出模拟机外框 */
+      overflow: hidden;
+      background: linear-gradient(165deg, #3f3f42 0%, #252527 35%, #1a1a1c 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+    }
+
+    /* 听筒 / 刘海条 */
+    .phone-mock-earpiece {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 88px;
+      height: 26px;
+      background: #0d0d0f;
+      border-radius: 14px;
+      z-index: 5;
+      pointer-events: none;
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.06);
+    }
+
+    /* 屏幕区域：transform 使内部 position:fixed 相对于本屏，而非视口 */
+    .phone-mock-screen {
+      position: relative;
+      width: 375px;
+      max-width: calc(100vw - 48px);
+      height: min(812px, calc(100dvh - 96px));
+      max-height: calc(100dvh - 96px);
+      box-sizing: border-box;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      background: var(--sfa-bg-page);
+      border-radius: 34px;
+      transform: translateZ(0);
+      isolation: isolate;
+      /* 为顶部听筒装饰条留出空隙，避免压住导航 */
+      padding-top: 10px;
+      padding-bottom: calc(12px + var(--safe-bottom));
+      /* Firefox：细滚动条 + 轨道颜色，避免视觉上顶破圆角区域 */
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+    }
+
+    /* WebKit / Edge：窄滚动条，贴内缘，不超出圆角可视区 */
+    .phone-mock-screen::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .phone-mock-screen::-webkit-scrollbar-track {
+      background: transparent;
+      margin: 6px 0;
+    }
+
+    .phone-mock-screen::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.22);
+      border-radius: 5px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    .phone-mock-screen::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(0, 0, 0, 0.32);
+      background-clip: padding-box;
+    }
+
+    .phone-mock-screen::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    .phone-mock-side-btn {
+      position: absolute;
+      right: -3px;
+      top: 120px;
+      width: 4px;
+      height: 56px;
+      background: linear-gradient(90deg, #2a2a2c, #1f1f21);
+      border-radius: 0 3px 3px 0;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .phone-mock-side-btn--vol {
+      top: 200px;
+      height: 48px;
+    }
+
+    /* 6.1 导航栏 + 6.3.4 搜索+筛选行：标题一行，搜索框与筛选同一行 */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      padding: calc(8px + var(--safe-top)) 16px 12px;
+      background: var(--sfa-bg-card);
+      border-bottom: 1px solid var(--sfa-divider);
+    }
+
+    .app-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 650;
+      line-height: 18px;
+      color: var(--sfa-text-primary);
+      margin: 0;
+    }
+
+    .app-header-search-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 48px;
+    }
+
+    .header-search-wrap {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+    }
+
+    /* 搜索框背景 #F2F2F2 · 圆角 12px · 企微搜索+筛选行 */
+    .header-search-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 10px 0 36px;
+      border: none;
+      border-radius: 12px;
+      background: #F2F2F2;
+      font-size: 15px;
+      color: var(--sfa-text-primary);
+      outline: none;
+    }
+
+    .header-search-input::placeholder {
+      color: #BBBBBB;
+    }
+
+    .header-search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--sfa-text-tertiary);
+      pointer-events: none;
+    }
+
+    .header-btn {
+      flex-shrink: 0;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 8px 4px;
+      border: none;
+      background: transparent;
+      color: var(--sfa-text-link);
+      font-size: 16px;
+      font-weight: 650;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .header-btn svg { width: 18px; height: 18px; }
+
+    .filter-sheet-close {
+      min-width: 44px;
+      min-height: 44px;
+      margin: 0;
+      padding: 8px;
+      border: none;
+      background: transparent;
+      color: var(--sfa-text-tertiary);
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    /* 列表上方仅展示总条数 */
+    .stats-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 12px 16px 8px;
+      background: var(--sfa-bg-page);
+    }
+
+    .stat-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--sfa-divider);
+      background: var(--sfa-bg-card);
+      color: var(--sfa-text-secondary);
+      font-size: 12px;
+      line-height: 12px;
+    }
+
+    /* 6.6 列表卡片：343px 宽、圆角 12px、无阴影 */
+    .list-area {
+      padding: 0 16px 16px;
+    }
+
+    .quote-card {
+      background: var(--sfa-bg-card);
+      border-radius: var(--sfa-radius-card);
+      box-shadow: none;
+      margin: 0 auto 12px;
+      max-width: 343px;
+      padding: 16px;
+      border: 1px solid var(--sfa-divider);
+    }
+
+    .card-head {
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .card-head-main { min-width: 0; }
+
+    /* 列表主标题 16px Semibold · 单号为链接色 */
+    .card-no {
+      font-size: 16px;
+      font-weight: 650;
+      line-height: 20px;
+      color: var(--sfa-text-link);
+      word-break: break-all;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline;
+    }
+
+    .card-no:active { opacity: 0.7; }
+
+    .card-status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 12px;
+    }
+
+    /* 6.6.2 字段 label 12px #999 · 值 12px #000 */
+    .kv-grid {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 8px 10px;
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    .kv-label { color: var(--sfa-text-tertiary); }
+    .kv-val {
+      color: var(--sfa-text-primary);
+      font-family: var(--sfa-font-zh);
+      word-break: break-word;
+    }
+
+    .card-actions {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--sfa-divider);
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .link {
+      color: var(--sfa-text-link);
+      font-size: 16px;
+      font-weight: 650;
+      cursor: pointer;
+      text-decoration: none;
+      min-height: 44px;
+      padding: 10px 0 10px 12px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* 6.6.3 状态标签语义色 */
+    .status-sfa-blue { color: var(--sfa-status-blue); }
+    .status-sfa-green { color: var(--sfa-status-green); }
+    .status-sfa-red { color: var(--sfa-status-red); }
+    .status-sfa-muted { color: var(--sfa-text-tertiary); }
+
+    /* 十二 空状态：Caption 12px #999 */
+    .empty-hint {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--sfa-text-tertiary);
+      font-size: 12px;
+      line-height: 18px;
+      background: var(--sfa-bg-card);
+      border-radius: 0;
+      margin: 8px auto 0;
+      max-width: 343px;
+    }
+
+    /* 悬浮新增按钮：固定在手机模拟器右下角（不随内容滚动） */
+    .fab-add {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      width: 56px;
+      height: 56px;
+      border: none;
+      border-radius: 50%;
+      background: var(--sfa-primary);
+      color: #FFFFFF;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 130;
+      box-shadow: 0 8px 20px rgba(27, 118, 108, 0.35);
+    }
+
+    .fab-add svg {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .fab-add:active {
+      background: var(--sfa-primary-pressed);
+      transform: translateY(1px);
+    }
+
+    /* 未挂载筛选前不占位 */
+    #filterMount:empty {
+      display: none;
+    }
+
+    /* 滑动加载底部提示 */
+    .list-load-hint {
+      text-align: center;
+      padding: 12px 16px 20px;
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--sfa-text-tertiary);
+    }
+
+    /* 6.4 筛选面板：遮罩 0.5 · 顶圆角 20px · 阴影 */
+    .filter-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s, visibility 0.25s;
+    }
+
+    .filter-backdrop.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .filter-sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 201;
+      max-height: min(88vh, 100dvh - 40px);
+      max-width: 375px;
+      margin: 0 auto;
+      background: var(--sfa-bg-card);
+      border-radius: var(--sfa-radius-filter-sheet) var(--sfa-radius-filter-sheet) 0 0;
+      box-shadow: var(--sfa-shadow-filter-panel);
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+      padding-bottom: var(--safe-bottom);
+      overflow: hidden;
+    }
+
+    .filter-backdrop.open + .filter-sheet,
+    .filter-sheet.open {
+      transform: translateY(0);
+    }
+
+    body.filter-open .filter-backdrop { opacity: 1; visibility: visible; }
+    body.filter-open .filter-sheet { transform: translateY(0); }
+
+    .filter-sheet-hd {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--sfa-divider);
+      font-size: 16px;
+      font-weight: 650;
+      line-height: 16px;
+      color: var(--sfa-text-primary);
+    }
+
+    .filter-sheet-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px 16px 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+    }
+
+    .filter-sheet-body::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .filter-sheet-body::-webkit-scrollbar-track {
+      background: transparent;
+      margin: 4px 0;
+    }
+
+    .filter-sheet-body::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.22);
+      border-radius: 5px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    .filter-sheet-body::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    .filter-sheet-ft {
+      flex-shrink: 0;
+      display: flex;
+      gap: 12px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--sfa-divider);
+      background: var(--sfa-bg-card);
+    }
+
+    /* 6.4.4 / 6.8.6：重置辅色 · 确定主色 · 高度 48 · 圆角 28 */
+    .filter-sheet-ft .btn-filter-reset {
+      flex: 1;
+      height: 48px;
+      border-radius: 28px;
+      font-size: 16px;
+      font-weight: 650;
+      background: var(--sfa-bg-tab-container);
+      color: var(--sfa-text-secondary);
+      border: none;
+      cursor: pointer;
+    }
+
+    .filter-sheet-ft .btn-filter-submit {
+      flex: 1;
+      height: 48px;
+      border-radius: 28px;
+      font-size: 16px;
+      font-weight: 650;
+      background: var(--sfa-primary);
+      color: #FFFFFF;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0px 4px 16px rgba(27, 118, 108, 0.25);
+    }
+
+    .filter-sheet-ft .btn-filter-submit:active { background: var(--sfa-primary-pressed); }
+
+    .m-field {
+      margin-bottom: 16px;
+    }
+
+    .m-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 14px;
+      color: var(--sfa-text-primary);
+      margin-bottom: 8px;
+    }
+
+    /* 录入行高 48px · 筛选默认底 #F6F6F6 · 圆角 8px */
+    .input, .select {
+      width: 100%;
+      height: 48px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--sfa-text-primary);
+      background: var(--sfa-bg-input);
+      outline: none;
+    }
+
+    .select { cursor: pointer; color: var(--sfa-text-secondary); }
+
+    .input::placeholder { color: #BBBBBB; }
+
+    .input:focus, .select:focus {
+      background: #FFFFFF;
+      box-shadow: 0 0 0 1px var(--sfa-primary);
+    }
+
+    .range {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 48px;
+      padding: 0 12px;
+      border-radius: 8px;
+      background: var(--sfa-bg-input);
+    }
+
+    .range:focus-within {
+      background: #FFFFFF;
+      box-shadow: 0 0 0 1px var(--sfa-primary);
+    }
+
+    .range input {
+      border: none;
+      outline: none;
+      flex: 1;
+      min-width: 0;
+      font-size: 14px;
+      font-family: var(--sfa-font-num);
+      color: var(--sfa-text-primary);
+      background: transparent;
+    }
+
+    .range-sep { color: var(--sfa-text-tertiary); font-size: 12px; flex-shrink: 0; }
+
+    .filter-extra-block { display: none; }
+    .filter-extra-block.show { display: block; }
+
+    .toggle-more {
+      width: 100%;
+      height: 44px;
+      margin: 4px 0 8px;
+      border: none;
+      background: transparent;
+      color: var(--sfa-text-link);
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .toggle-more svg {
+      width: 18px;
+      height: 18px;
+      transition: transform 0.2s ease;
+    }
+
+    .ms-dd { position: relative; }
+
+    .ms-dd-trigger {
+      width: 100%;
+      height: 48px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 8px;
+      background: var(--sfa-bg-input);
+      font-size: 16px;
+      color: var(--sfa-text-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      text-align: left;
+    }
+
+    .ms-dd.open .ms-dd-trigger {
+      background: #FFFFFF;
+      box-shadow: 0 0 0 1px var(--sfa-primary);
+    }
+
+    .ms-dd-trigger-text {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ms-dd-placeholder { color: var(--sfa-text-tertiary); }
+
+    .ms-dd-caret { width: 18px; height: 18px; color: var(--sfa-text-tertiary); flex-shrink: 0; }
+
+    .ms-dd-panel {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 4px);
+      z-index: 10;
+      background: var(--sfa-bg-card);
+      border: 1px solid var(--sfa-divider);
+      border-radius: 8px;
+      box-shadow: var(--sfa-shadow-card);
+      max-height: 240px;
+      overflow: auto;
+      padding: 6px 0;
+    }
+
+    .ms-dd-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 11px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .ms-dd-option:active { background: var(--sfa-bg-page); }
+
+    .ms-dd-option input[type="checkbox"] {
+      margin-top: 2px;
+      width: 18px;
+      height: 18px;
+      accent-color: var(--sfa-primary);
+    }
+
+    .ms-dd-option span { flex: 1; line-height: 1.45; word-break: break-all; color: var(--sfa-text-secondary); }
+
+  </style>
+</head>
+<body>
+  <div class="phone-mock-wrap">
+    <div class="phone-mock" role="presentation" aria-label="手机预览框">
+      <div class="phone-mock-earpiece" aria-hidden="true"></div>
+      <span class="phone-mock-side-btn" aria-hidden="true"></span>
+      <span class="phone-mock-side-btn phone-mock-side-btn--vol" aria-hidden="true"></span>
+      <div class="phone-mock-screen" id="phoneMockScreen">
+  <header class="app-header">
+    <h1 class="app-title">报价申请列表</h1>
+    <div class="app-header-search-row">
+      <div class="header-search-wrap">
+        <svg class="header-search-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <input type="search" class="header-search-input" id="headerSearch" placeholder="搜索单号、标题、客户、项目点" enterkeyhint="search" autocomplete="off" />
+      </div>
+      <button type="button" class="header-btn" id="btnOpenFilter" aria-label="打开筛选">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span style="font-size:14px;">筛选</span>
+      </button>
+    </div>
+  </header>
+  <div class="stats-bar">
+    <span class="stat-pill" id="resultHint">共 0 条</span>
+  </div>
+  <div class="list-area" id="cardList"></div>
+  <p class="list-load-hint" id="loadMoreHint" aria-live="polite"></p>
+
+  <!-- 筛选 UI 由下方 <template> 提供，首次点「筛选」时克隆挂载到此节点 -->
+  <div id="filterMount"></div>
+      </div><!-- /.phone-mock-screen -->
+      <button type="button" class="fab-add" id="fabAddBtn" aria-label="新增报价申请" title="新增" onclick="onCreate()">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </button>
+    </div><!-- /.phone-mock -->
+  </div><!-- /.phone-mock-wrap -->
+
+  <!-- 筛选 DOM 放在 template 内：默认不参与布局与脚本解析，首次点「筛选」再克隆到 #filterMount -->
+  <template id="filterUiTpl">
+    <div class="filter-backdrop" id="filterBackdrop" onclick="closeFilterSheet()"></div>
+    <div class="filter-sheet" id="filterSheet" role="dialog" aria-modal="true" aria-labelledby="filterSheetTitle">
+      <div class="filter-sheet-hd">
+        <span id="filterSheetTitle">筛选条件</span>
+        <button type="button" class="filter-sheet-close" onclick="closeFilterSheet()" aria-label="关闭">✕</button>
+      </div>
+      <div class="filter-sheet-body" id="filterSheetBody">
+        <div class="m-field">
+          <label class="m-label" for="opCompany">运营公司</label>
+          <select class="select" id="opCompany">
+            <option value="">全部</option>
+            <option>丰厨(上海)供应链管理有限公司</option>
+            <option>丰厨(北京)供应链管理有限公司</option>
+          </select>
+        </div>
+        <div class="m-field">
+          <label class="m-label" for="customerName">客户名称</label>
+          <input class="input" id="customerName" placeholder="按名称模糊匹配" />
+        </div>
+        <div class="m-field">
+          <label class="m-label" for="quoteType">报价类型</label>
+          <select class="select" id="quoteType">
+            <option value="">全部</option>
+            <option>常规报价</option>
+            <option>临采报价</option>
+            <option>临客询价</option>
+          </select>
+        </div>
+        <div class="m-field">
+          <label class="m-label" for="projectSiteName">项目点名称</label>
+          <input class="input" id="projectSiteName" placeholder="关键字（包含）" />
+        </div>
+        <div class="m-field">
+          <label class="m-label" for="customerType">客户类型</label>
+          <select class="select" id="customerType">
+            <option value="">全部</option>
+            <option>酒店</option>
+            <option>团餐</option>
+            <option>社餐</option>
+          </select>
+        </div>
+        <div class="m-field">
+          <label class="m-label" for="docStatus">单据状态</label>
+          <select class="select" id="docStatus">
+            <option value="">全部</option>
+            <option>新建</option>
+            <option>采购待确认</option>
+            <option>销售待确认</option>
+            <option>已审核</option>
+          </select>
+        </div>
+        <div class="m-field">
+          <label class="m-label" for="oaStatus">OA单据状态</label>
+          <select class="select" id="oaStatus">
+            <option value="">全部</option>
+            <option>初始</option>
+            <option>OA审核中</option>
+            <option>已拒绝</option>
+            <option>审核完成</option>
+          </select>
+        </div>
+        <button type="button" class="toggle-more" id="toggleFilterBtn" onclick="toggleFiltersExpanded()">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="toggleFilterText">更多条件</span>
+        </button>
+        <div class="filter-extra-block" id="filterExtraBlock">
+          <div class="m-field">
+            <span class="m-label" id="prodCatMultiLabel">产品分类（多选）</span>
+            <div class="ms-dd" id="prodCatMultiDd">
+              <button type="button" class="ms-dd-trigger" id="prodCatMultiTrigger" aria-expanded="false">
+                <span class="ms-dd-trigger-text ms-dd-placeholder" id="prodCatMultiText">请选择</span>
+                <svg class="ms-dd-caret" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="ms-dd-panel" id="prodCatMultiPanel" hidden role="listbox"></div>
+            </div>
+          </div>
+          <div class="m-field">
+            <label class="m-label" for="purchaseStaff">采购人员</label>
+            <select class="select" id="purchaseStaff">
+              <option value="">全部</option>
+              <option>王采购</option>
+              <option>李采购</option>
+            </select>
+          </div>
+          <div class="m-field">
+            <label class="m-label" for="salesStaff">销售人员</label>
+            <select class="select" id="salesStaff">
+              <option value="">全部</option>
+              <option>张销售</option>
+              <option>赵销售</option>
+            </select>
+          </div>
+          <div class="m-field">
+            <span class="m-label">开始时间</span>
+            <div class="range">
+              <input id="startTimeFrom" type="date" aria-label="开始时间起" />
+              <span class="range-sep">至</span>
+              <input id="startTimeTo" type="date" aria-label="开始时间止" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="filter-sheet-ft">
+        <button type="button" class="btn-filter-reset" onclick="onReset()">重置</button>
+        <button type="button" class="btn-filter-submit" onclick="onSearchAndClose()">确定</button>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const allRows = [
+      {
+        id: 'BF202603180001',
+        quoteTitle: '沪上团餐服务中心2026-03-012026-03-31销售报价',
+        opCompany: '丰厨(上海)供应链管理有限公司',
+        quoteType: '常规报价',
+        productCategories: ['米面油', '干调类'],
+        customerName: '沪上团餐服务中心',
+        projectSiteName: '沪上-张江项目、沪上-闵行项目',
+        customerType: '团餐',
+        purchaseStaff: '王采购',
+        salesStaff: '张销售',
+        startTime: '2026-03-01',
+        endTime: '2026-03-31',
+        applyReason: '季度常规报价',
+        docStatus: '采购待确认',
+        oaStatus: '初始',
+        remark: '加急跟进采购确认'
+      },
+      {
+        id: 'BF202603180002',
+        opCompany: '丰厨(北京)供应链管理有限公司',
+        quoteType: '临采报价',
+        productCategories: ['冻品'],
+        customerName: '北京某某酒店',
+        projectSiteName: '北京-项目点B',
+        customerType: '团餐',
+        purchaseStaff: '李采购',
+        salesStaff: '赵销售',
+        startTime: '2026-03-05',
+        endTime: '2026-04-05',
+        applyReason: '项目打包报价',
+        docStatus: '已审核',
+        oaStatus: '审核完成',
+        remark: 'OA 已通过，待归档'
+      },
+      {
+        id: 'BF202603180003',
+        opCompany: '丰厨(上海)供应链管理有限公司',
+        quoteType: '常规报价',
+        productCategories: ['生鲜', '酒水'],
+        customerName: '上海XX连锁餐饮有限公司',
+        projectSiteName: '上海-项目点C',
+        customerType: '社餐',
+        purchaseStaff: '王采购',
+        salesStaff: '赵销售',
+        startTime: '2026-03-02',
+        endTime: '2026-03-20',
+        applyReason: '新客户试运行报价',
+        docStatus: '新建',
+        oaStatus: '初始',
+        remark: '试运行期价格待复核'
+      },
+      {
+        id: 'BF202603180004',
+        opCompany: '丰厨(上海)供应链管理有限公司',
+        quoteType: '临采报价',
+        productCategories: ['粮油'],
+        customerName: '上海某某酒店集团',
+        projectSiteName: '上海-项目点D',
+        customerType: '酒店',
+        purchaseStaff: '李采购',
+        salesStaff: '张销售',
+        startTime: '2026-03-03',
+        endTime: '2026-03-10',
+        applyReason: '临采补货紧急报价',
+        docStatus: '采购待确认',
+        oaStatus: '初始',
+        remark: '临采时效要求高'
+      },
+      {
+        id: 'BF202603180005',
+        opCompany: '丰厨(北京)供应链管理有限公司',
+        quoteType: '常规报价',
+        productCategories: ['调味品', '冻品'],
+        customerName: '北京某某团餐公司',
+        projectSiteName: '北京-项目点A',
+        customerType: '团餐',
+        purchaseStaff: '王采购',
+        salesStaff: '张销售',
+        startTime: '2026-03-01',
+        endTime: '2026-03-31',
+        applyReason: '月度常规续签报价',
+        docStatus: '销售待确认',
+        oaStatus: '初始',
+        remark: '续签条款与上月一致'
+      },
+      {
+        id: 'BF202603180006',
+        opCompany: '丰厨(北京)供应链管理有限公司',
+        quoteType: '临采报价',
+        productCategories: ['其他'],
+        customerName: '北京某某高校食堂',
+        projectSiteName: '北京-项目点C',
+        customerType: '团餐',
+        purchaseStaff: '李采购',
+        salesStaff: '赵销售',
+        startTime: '2026-03-06',
+        endTime: '2026-03-12',
+        applyReason: '活动期间临采价格确认',
+        docStatus: '销售待确认',
+        oaStatus: '初始',
+        remark: '活动档期待销售确认'
+      },
+      {
+        id: 'BF202603180007',
+        opCompany: '丰厨(上海)供应链管理有限公司',
+        quoteType: '常规报价',
+        productCategories: ['粮油', '生鲜'],
+        customerName: '上海某某医院餐厅',
+        projectSiteName: '上海-项目点E',
+        customerType: '社餐',
+        purchaseStaff: '王采购',
+        salesStaff: '张销售',
+        startTime: '2026-02-25',
+        endTime: '2026-03-25',
+        applyReason: '院区食材常规报价',
+        docStatus: '已审核',
+        oaStatus: 'OA审核中',
+        remark: 'OA 审批中，勿重复提交'
+      },
+      {
+        id: 'BF202603180008',
+        opCompany: '丰厨(北京)供应链管理有限公司',
+        quoteType: '常规报价',
+        productCategories: ['酒水'],
+        customerName: '北京某某连锁便利店',
+        projectSiteName: '北京-项目点D',
+        customerType: '社餐',
+        purchaseStaff: '李采购',
+        salesStaff: '张销售',
+        startTime: '2026-03-07',
+        endTime: '2026-04-07',
+        applyReason: '门店渠道常规报价',
+        docStatus: '采购待确认',
+        oaStatus: '初始',
+        remark: '渠道价与总部政策对齐'
+      },
+      {
+        id: 'BF202603180009',
+        opCompany: '丰厨(上海)供应链管理有限公司',
+        quoteType: '临采报价',
+        productCategories: ['冻品', '调味品'],
+        customerName: '上海某某会展中心',
+        projectSiteName: '上海-项目点F',
+        customerType: '社餐',
+        purchaseStaff: '王采购',
+        salesStaff: '赵销售',
+        startTime: '2026-03-08',
+        endTime: '2026-03-15',
+        applyReason: '展会期间临采报价',
+        docStatus: '销售待确认',
+        oaStatus: '初始',
+        remark: '展会档期短，优先销售确认'
+      },
+      {
+        id: 'BF202603180010',
+        opCompany: '丰厨(北京)供应链管理有限公司',
+        quoteType: '临采报价',
+        productCategories: ['粮油', '其他'],
+        customerName: '北京某某五星级酒店',
+        projectSiteName: '北京-项目点E',
+        customerType: '酒店',
+        purchaseStaff: '李采购',
+        salesStaff: '张销售',
+        startTime: '2026-03-09',
+        endTime: '2026-03-18',
+        applyReason: '高端宴会临采报价',
+        docStatus: '已审核',
+        oaStatus: '已拒绝',
+        remark: 'OA 驳回：需补充宴会清单'
+      },
+      {
+        id: 'BF202603180011',
+        opCompany: '丰厨(上海)供应链管理有限公司',
+        quoteType: '常规报价',
+        productCategories: ['生鲜'],
+        customerName: '上海某某园区食堂',
+        projectSiteName: '上海-项目点G',
+        customerType: '团餐',
+        purchaseStaff: '王采购',
+        salesStaff: '赵销售',
+        startTime: '2026-03-10',
+        endTime: '2026-04-10',
+        applyReason: '园区团餐常规报价',
+        docStatus: '新建',
+        oaStatus: '初始',
+        remark: '待提交采购协同'
+      },
+      {
+        id: 'BF202603180012',
+        opCompany: '丰厨(北京)供应链管理有限公司',
+        quoteType: '常规报价',
+        productCategories: ['调味品', '冻品', '粮油'],
+        customerName: '北京某某企业园区',
+        projectSiteName: '北京-项目点F',
+        customerType: '团餐',
+        purchaseStaff: '李采购',
+        salesStaff: '张销售',
+        startTime: '2026-03-11',
+        endTime: '2026-04-11',
+        applyReason: '企业团餐常规报价',
+        docStatus: '销售待确认',
+        oaStatus: '初始',
+        remark: '企业客户年度框架协议'
+      },
+      {
+        id: 'BF202603180013',
+        opCompany: '丰厨(上海)供应链管理有限公司',
+        quoteType: '临客询价',
+        productCategories: ['粮油', '调味品'],
+        customerName: '潜在客户-手工录入名称',
+        projectSiteName: '待立项-项目点（手工录入）',
+        customerType: '社餐',
+        purchaseStaff: '王采购',
+        salesStaff: '张销售',
+        startTime: '2026-03-12',
+        endTime: '2026-03-25',
+        applyReason: '临客询价，待建档后转常规',
+        docStatus: '新建',
+        oaStatus: '初始',
+        remark: '客户尚未入主数据'
+      }
+    ];
+
+    const ALL_PRODUCT_CATEGORIES = ['粮油', '调味品', '冻品', '生鲜', '酒水', '其他'];
+    const prodCatSelected = new Set();
+
+    function dedupeSortedStringList(arr) {
+      const seen = new Set();
+      (arr || []).forEach(x => {
+        const s = String(x).trim();
+        if (s) seen.add(s);
+      });
+      return Array.from(seen).sort((a, b) => a.localeCompare(b, 'zh'));
+    }
+
+    function rowMatchesMulti(rowArr, filterArr) {
+      if (!filterArr || !filterArr.length) return true;
+      if (!rowArr || !rowArr.length) return false;
+      const setF = new Set(filterArr);
+      return rowArr.some(x => setF.has(x));
+    }
+
+    function buildMultiCheckboxPanel(panelEl, values, selectedSet, onRefresh) {
+      panelEl.innerHTML = '';
+      values.forEach(v => {
+        const label = document.createElement('label');
+        label.className = 'ms-dd-option';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = selectedSet.has(v);
+        input.addEventListener('change', () => {
+          if (input.checked) selectedSet.add(v);
+          else selectedSet.delete(v);
+          onRefresh();
+        });
+        const span = document.createElement('span');
+        span.textContent = v;
+        label.appendChild(input);
+        label.appendChild(span);
+        panelEl.appendChild(label);
+      });
+    }
+
+    function refreshProdCatTrigger() {
+      const textEl = document.getElementById('prodCatMultiText');
+      if (!textEl) return;
+      if (prodCatSelected.size === 0) {
+        textEl.textContent = '请选择';
+        textEl.classList.add('ms-dd-placeholder');
+        return;
+      }
+      const arr = Array.from(prodCatSelected);
+      const joined = arr.join('、');
+      if (joined.length > 24 || arr.length > 2) {
+        textEl.textContent = `已选 ${prodCatSelected.size} 项`;
+      } else {
+        textEl.textContent = joined;
+      }
+      textEl.classList.remove('ms-dd-placeholder');
+    }
+
+    function closeAllProdCatPanel() {
+      const dd = document.getElementById('prodCatMultiDd');
+      if (!dd) return;
+      dd.classList.remove('open');
+      const panel = dd.querySelector('.ms-dd-panel');
+      if (panel) panel.hidden = true;
+      const tr = dd.querySelector('.ms-dd-trigger');
+      if (tr) tr.setAttribute('aria-expanded', 'false');
+    }
+
+    function toggleProdCatDd() {
+      const dd = document.getElementById('prodCatMultiDd');
+      if (!dd) return;
+      const wasOpen = dd.classList.contains('open');
+      closeAllProdCatPanel();
+      if (!wasOpen) {
+        dd.classList.add('open');
+        const panel = dd.querySelector('.ms-dd-panel');
+        if (panel) panel.hidden = false;
+        dd.querySelector('.ms-dd-trigger').setAttribute('aria-expanded', 'true');
+      }
+    }
+
+    function initProductCatFilter() {
+      const lv1s = dedupeSortedStringList([
+        ...ALL_PRODUCT_CATEGORIES,
+        ...allRows.flatMap(r => r.productCategories || [])
+      ]);
+      buildMultiCheckboxPanel(
+        document.getElementById('prodCatMultiPanel'),
+        lv1s,
+        prodCatSelected,
+        refreshProdCatTrigger
+      );
+      refreshProdCatTrigger();
+    }
+
+    /** 筛选面板 DOM 首次点击「筛选」时从 <template id="filterUiTpl"> 克隆挂载 */
+    let filterUiMounted = false;
+
+    function mountFilterUi() {
+      if (filterUiMounted) return;
+      const tpl = document.getElementById('filterUiTpl');
+      const mount = document.getElementById('filterMount');
+      if (!tpl || !mount) return;
+      mount.appendChild(tpl.content.cloneNode(true));
+      filterUiMounted = true;
+      initProductCatFilter();
+      const tr = document.getElementById('prodCatMultiTrigger');
+      if (tr) {
+        tr.addEventListener('click', function (e) {
+          e.preventDefault();
+          toggleProdCatDd();
+        });
+      }
+      if (!window.__prodCatDocClickBound) {
+        document.addEventListener('click', function (e) {
+          if (!e.target.closest('#prodCatMultiDd')) closeAllProdCatPanel();
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') closeAllProdCatPanel();
+        });
+        window.__prodCatDocClickBound = true;
+      }
+    }
+
+    let filtered = [...allRows];
+    /** 每批加载条数（与常见接口分页一致，原型模拟滑动追加） */
+    const PAGE_BATCH = 20;
+    let loadedCount = 0;
+    let appendLock = false;
+
+    let filtersExpanded = false;
+
+    function toggleFiltersExpanded() {
+      filtersExpanded = !filtersExpanded;
+      const block = document.getElementById('filterExtraBlock');
+      const txt = document.getElementById('toggleFilterText');
+      const btn = document.getElementById('toggleFilterBtn');
+      if (block) block.classList.toggle('show', filtersExpanded);
+      if (txt) txt.textContent = filtersExpanded ? '收起条件' : '更多条件';
+      if (btn) {
+        const svg = btn.querySelector('svg');
+        if (svg) svg.style.transform = filtersExpanded ? 'rotate(180deg)' : '';
+      }
+    }
+
+    function classForDocStatus(s) {
+      const m = {
+        新建: 'status-sfa-blue',
+        已审核: 'status-sfa-green',
+        采购待确认: 'status-sfa-blue',
+        销售待确认: 'status-sfa-blue'
+      };
+      return m[s] || 'status-sfa-muted';
+    }
+
+    function classForOaStatus(s) {
+      const m = {
+        初始: 'status-sfa-muted',
+        OA审核中: 'status-sfa-blue',
+        审核完成: 'status-sfa-green',
+        已拒绝: 'status-sfa-red'
+      };
+      return m[s] || 'status-sfa-muted';
+    }
+
+    function toLowerSafe(s) {
+      return String(s || '').toLowerCase();
+    }
+
+    function quoteTitleOf(r) {
+      return r.quoteTitle || `${r.customerName || ''}${r.startTime || ''}${r.endTime || ''}销售报价`;
+    }
+
+    /** 顶栏搜索：单号 / 报价标题 / 客户 / 项目点 / 运营公司 / 申请理由 模糊包含 */
+    function rowMatchesHeaderKw(r, kw) {
+      if (!kw) return true;
+      const k = toLowerSafe(kw);
+      const blob = [
+        r.id,
+        quoteTitleOf(r),
+        r.customerName,
+        r.projectSiteName,
+        r.opCompany,
+        r.applyReason || ''
+      ].join(' ');
+      return toLowerSafe(blob).includes(k);
+    }
+
+    function applyFilters() {
+      const headerEl = document.getElementById('headerSearch');
+      const headerKw = headerEl ? headerEl.value.trim() : '';
+
+      if (!document.getElementById('opCompany')) {
+        filtered = allRows.filter(r => rowMatchesHeaderKw(r, headerKw));
+        return;
+      }
+      const opCompany = document.getElementById('opCompany').value.trim();
+      const customerName = document.getElementById('customerName').value.trim();
+      const quoteType = document.getElementById('quoteType').value.trim();
+      const projectSiteName = document.getElementById('projectSiteName').value.trim();
+      const customerType = document.getElementById('customerType').value.trim();
+      const docStatus = document.getElementById('docStatus').value.trim();
+      const oaStatus = document.getElementById('oaStatus').value.trim();
+      const purchaseStaff = document.getElementById('purchaseStaff').value.trim();
+      const salesStaff = document.getElementById('salesStaff').value.trim();
+      const startTimeFrom = document.getElementById('startTimeFrom').value;
+      const startTimeTo = document.getElementById('startTimeTo').value;
+      const prodCats = Array.from(prodCatSelected);
+
+      filtered = allRows.filter(r => {
+        if (!rowMatchesHeaderKw(r, headerKw)) return false;
+        if (opCompany && r.opCompany !== opCompany) return false;
+        if (quoteType && r.quoteType !== quoteType) return false;
+        if (customerType && r.customerType !== customerType) return false;
+        if (docStatus && r.docStatus !== docStatus) return false;
+        if (oaStatus && r.oaStatus !== oaStatus) return false;
+        if (purchaseStaff && r.purchaseStaff !== purchaseStaff) return false;
+        if (salesStaff && r.salesStaff !== salesStaff) return false;
+        if (customerName && !toLowerSafe(r.customerName).includes(toLowerSafe(customerName))) return false;
+        if (projectSiteName && !toLowerSafe(r.projectSiteName).includes(toLowerSafe(projectSiteName))) return false;
+        if (startTimeFrom && r.startTime < startTimeFrom) return false;
+        if (startTimeTo && r.startTime > startTimeTo) return false;
+        if (!rowMatchesMulti(r.productCategories, prodCats)) return false;
+        return true;
+      });
+    }
+
+    function esc(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function createCardElement(r) {
+      const ds = classForDocStatus(r.docStatus);
+      const os = classForOaStatus(r.oaStatus);
+      const cats = (r.productCategories || []).join('、') || '-';
+      const card = document.createElement('article');
+      card.className = 'quote-card';
+      card.innerHTML = `
+        <div class="card-head">
+          <div class="card-head-main">
+            <a href="javascript:void(0)" class="card-no" data-act="detail" data-id="${esc(r.id)}">${esc(r.id)}</a>
+            <div class="card-status-row">
+              <span class="${ds}">单据：${esc(r.docStatus)}</span>
+              <span class="${os}">OA：${esc(r.oaStatus)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="kv-grid">
+          <span class="kv-label">报价标题</span><span class="kv-val">${esc(quoteTitleOf(r))}</span>
+          <span class="kv-label">运营公司</span><span class="kv-val">${esc(r.opCompany)}</span>
+          <span class="kv-label">报价类型</span><span class="kv-val">${esc(r.quoteType)}</span>
+          <span class="kv-label">产品分类</span><span class="kv-val">${esc(cats)}</span>
+          <span class="kv-label">客户名称</span><span class="kv-val">${esc(r.customerName)}</span>
+          <span class="kv-label">项目点</span><span class="kv-val">${esc(r.projectSiteName)}</span>
+          <span class="kv-label">客户类型</span><span class="kv-val">${esc(r.customerType)}</span>
+          <span class="kv-label">采购/销售</span><span class="kv-val">${esc(r.purchaseStaff || '-')} / ${esc(r.salesStaff || '-')}</span>
+          <span class="kv-label">有效期</span><span class="kv-val">${esc(r.startTime)} ~ ${esc(r.endTime)}</span>
+          <span class="kv-label">申请理由</span><span class="kv-val">${esc(r.applyReason)}</span>
+          <span class="kv-label">备注</span><span class="kv-val">${esc(r.remark || '-')}</span>
+        </div>
+        <div class="card-actions">
+          <a href="javascript:void(0)" class="link" data-act="detail" data-id="${esc(r.id)}">${r.docStatus === '采购待确认' ? '去确认' : (r.docStatus === '销售待确认' ? '去确认' : '查看')}</a>
+        </div>
+      `;
+      return card;
+    }
+
+    function updateLoadHint() {
+      const hint = document.getElementById('loadMoreHint');
+      if (!hint) return;
+      const total = filtered.length;
+      if (total === 0) {
+        hint.textContent = '';
+        return;
+      }
+      if (loadedCount >= total) {
+        hint.textContent = '— 没有更多了 —';
+      } else {
+        hint.textContent = '上滑加载更多';
+      }
+    }
+
+    function appendNextBatch() {
+      if (appendLock || loadedCount >= filtered.length) return;
+      appendLock = true;
+      const root = document.getElementById('cardList');
+      const total = filtered.length;
+      const start = loadedCount;
+      const end = Math.min(start + PAGE_BATCH, total);
+      const frag = document.createDocumentFragment();
+      for (let i = start; i < end; i++) {
+        frag.appendChild(createCardElement(filtered[i]));
+      }
+      root.appendChild(frag);
+      loadedCount = end;
+      document.getElementById('resultHint').textContent = `共 ${total} 条`;
+      updateLoadHint();
+      appendLock = false;
+      /* 内容不足一屏时无法触发滚动，继续追加直到可滚动或已全部加载 */
+      requestAnimationFrame(flushLoadIfShortViewport);
+    }
+
+    function flushLoadIfShortViewport() {
+      const el = document.getElementById('phoneMockScreen');
+      if (!el || loadedCount >= filtered.length) return;
+      if (el.scrollHeight <= el.clientHeight + 8) {
+        appendNextBatch();
+      }
+    }
+
+    /** 筛选/重置后：清空列表并从第一条开始分批加载 */
+    function render() {
+      const root = document.getElementById('cardList');
+      const total = filtered.length;
+      loadedCount = 0;
+      if (total === 0) {
+        root.innerHTML = '<div class="empty-hint">暂无数据，请调整查询条件后重试</div>';
+        document.getElementById('resultHint').textContent = '共 0 条';
+        updateLoadHint();
+        return;
+      }
+      root.innerHTML = '';
+      appendNextBatch();
+    }
+
+    function tryLoadMoreOnScroll() {
+      const el = document.getElementById('phoneMockScreen');
+      if (!el || loadedCount >= filtered.length) return;
+      const threshold = 100;
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < threshold) {
+        appendNextBatch();
+      }
+    }
+
+    function onSearch() {
+      applyFilters();
+      render();
+    }
+
+    function onSearchAndClose() {
+      onSearch();
+      closeFilterSheet();
+    }
+
+    function onReset() {
+      const hs = document.getElementById('headerSearch');
+      if (hs) hs.value = '';
+      if (!document.getElementById('opCompany')) {
+        onSearch();
+        return;
+      }
+      document.getElementById('opCompany').value = '';
+      document.getElementById('customerName').value = '';
+      document.getElementById('quoteType').value = '';
+      document.getElementById('projectSiteName').value = '';
+      document.getElementById('customerType').value = '';
+      document.getElementById('docStatus').value = '';
+      document.getElementById('oaStatus').value = '';
+      document.getElementById('purchaseStaff').value = '';
+      document.getElementById('salesStaff').value = '';
+      document.getElementById('startTimeFrom').value = '';
+      document.getElementById('startTimeTo').value = '';
+      prodCatSelected.clear();
+      initProductCatFilter();
+      onSearch();
+    }
+
+    function openFilterSheet() {
+      mountFilterUi();
+      document.body.classList.add('filter-open');
+      const bd = document.getElementById('filterBackdrop');
+      const sh = document.getElementById('filterSheet');
+      if (bd) bd.classList.add('open');
+      if (sh) sh.classList.add('open');
+    }
+
+    function closeFilterSheet() {
+      document.body.classList.remove('filter-open');
+      const bd = document.getElementById('filterBackdrop');
+      const sh = document.getElementById('filterSheet');
+      if (bd) bd.classList.remove('open');
+      if (sh) sh.classList.remove('open');
+      closeAllProdCatPanel();
+    }
+
+    document.getElementById('btnOpenFilter').addEventListener('click', openFilterSheet);
+
+    (function initHeaderSearch() {
+      const el = document.getElementById('headerSearch');
+      if (!el) return;
+      let timer = null;
+      el.addEventListener('input', function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          onSearch();
+        }, 280);
+      });
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          clearTimeout(timer);
+          onSearch();
+        }
+      });
+    })();
+
+    document.getElementById('cardList').addEventListener('click', function (e) {
+      const t = e.target.closest('[data-act="detail"]');
+      if (!t) return;
+      e.preventDefault();
+      viewDetail(t.getAttribute('data-id'));
+    });
+
+    const phoneScreenEl = document.getElementById('phoneMockScreen');
+    if (phoneScreenEl) {
+      phoneScreenEl.addEventListener('scroll', function () {
+        tryLoadMoreOnScroll();
+      }, { passive: true });
+    }
+
+    function buildDetailUrl(id) {
+      const row = allRows.find((r) => r.id === id);
+      const q = new URLSearchParams();
+      q.set('id', id);
+      if (row && row.docStatus) q.set('docStatus', row.docStatus);
+      if (row && row.oaStatus) q.set('oaStatus', row.oaStatus);
+      return 'PRD.Quote-Request-Mobile.html?' + q.toString();
+    }
+
+    function viewDetail(id) {
+      const title = '报价申请详情';
+      const rel = buildDetailUrl(id);
+      const urlForIndex = '../../requirements/销售管理/报价申请/' + rel;
+      if (window.parent && window.parent !== window && typeof window.parent.openTab === 'function') {
+        window.parent.openTab(title, urlForIndex);
+        return;
+      }
+      window.location.href = rel;
+    }
+
+    function onCreate() {
+      const title = '新增销售报价申请';
+      const urlForIndex = `../../requirements/销售管理/报价申请/PRD.Quote-Request-Mobile.html`;
+      const urlForSelf = `PRD.Quote-Request-Mobile.html`;
+      if (window.parent && window.parent !== window && typeof window.parent.openTab === 'function') {
+        window.parent.openTab(title, urlForIndex);
+        return;
+      }
+      window.location.href = urlForSelf;
+    }
+
+    render();
+  </script>
+</body>
+</html>
