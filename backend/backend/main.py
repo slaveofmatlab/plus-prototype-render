@@ -77,3 +77,33 @@ async def startup_event():
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "message": "报价建议 Demo 运行中"}
+
+
+@app.get("/api/debug/info")
+async def debug_info():
+    """调试信息：检查目录和文件是否可用"""
+    from backend.config import PROJECT_ROOT, UPLOAD_DIR, QUOTE_DATA_FILE, PROCUREMENT_DATA_FILE, MATCHING_ALGORITHM_DIR, PREPROCESS_DIR, DATABASE_DIR
+    import os
+    
+    info = {
+        "project_root": PROJECT_ROOT,
+        "upload_dir": UPLOAD_DIR,
+        "upload_dir_exists": os.path.isdir(UPLOAD_DIR),
+        "upload_dir_writable": os.access(UPLOAD_DIR, os.W_OK) if os.path.isdir(UPLOAD_DIR) else False,
+        "files": {
+            "quote_data": os.path.isfile(QUOTE_DATA_FILE),
+            "procurement_data": os.path.isfile(PROCUREMENT_DATA_FILE),
+        },
+        "dirs": {
+            "matching_algorithm": os.path.isdir(MATCHING_ALGORITHM_DIR),
+            "preprocess": os.path.isdir(PREPROCESS_DIR),
+            "database": os.path.isdir(DATABASE_DIR),
+        }
+    }
+    
+    # 检查 frontend 目录
+    frontend_dir = os.path.join(PROJECT_ROOT, "frontend")
+    info["frontend_dir"] = frontend_dir
+    info["frontend_exists"] = os.path.isdir(frontend_dir)
+    
+    return info

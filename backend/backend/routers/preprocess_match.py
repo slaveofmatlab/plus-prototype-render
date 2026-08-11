@@ -60,19 +60,33 @@ async def preprocess_match(
     5. 查询历史报价（优先匹配当前客户）与采购数据
     返回完整结果供前端渲染。
     """
+    logger.info(f"收到上传请求: filename={file.filename}, customer_name={customer_name}")
+    
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in (".xlsx", ".xls"):
-        raise HTTPException(status_code=400, detail="仅支持 .xlsx 和 .xls 格式的 Excel 文件")
+        logger.error(f"不支持的文件格式: {ext}")
+        raise HTTPException(status_code=400, detail=f"仅支持 .xlsx 和 .xls 格式，收到: {ext}")
 
     task = create_task()
     save_path = os.path.join(UPLOAD_DIR, f"{task.task_id}{ext}")
-    with open(save_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    
+    try:
+        logger.info(f"保存文件到: {save_path}")
+        with open(save_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        logger.info(f"文件保存成功: {save_path}")
+    except Exception as e:
+        logger.exception("文件保存失败")
+        raise HTTPException(status_code=500, detail=f"文件保存失败: {str(e)}")
+    
     task.file_path = save_path
 
     try:
+        logger.info(f"开始解析 Excel: {save_path}")
         items, columns, sheets_info = parse_excel(save_path)
+        logger.info(f"Excel 解析完成，识别到 {len(items)} 条商品")
     except Exception as e:
+        logger.exception("Excel 解析失败")
         raise HTTPException(status_code=500, detail=f"文件解析失败: {str(e)}")
 
     if not items:
