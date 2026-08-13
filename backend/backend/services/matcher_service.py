@@ -64,20 +64,66 @@ def match_single(query_text: str, top_n: int = 10) -> dict:
 
 
 
-def match_single_preprocessed(query_text: str, top_n: int = 10) -> dict:
+def match_single_preprocessed(query_text: str, top_n: int = 10, query_info=None) -> dict:
     """
-    单条商品匹配（基于已预处理的查询文本，不再内部做普通归一化）。
-    用于上传客户报价单流程：系统已根据客户类型完成预处理，此处直接用预处理后的文本召回。
+    单条商品匹配（基于已预处理的查询文本）。
+    可选传入 query_info 复用归一化结果，避免重复调用 process_single_record。
     """
     matcher = get_matcher()
-    candidates = matcher.query_extended(query_text, top_n=top_n, query_info=None)
-    query_info = process_single_record(query_text.strip(), brands_sorted=matcher.brands)
+    if query_info is None:
+        query_info = process_single_record(query_text.strip(), brands_sorted=matcher.brands)
+    candidates = matcher.query_extended(query_text, top_n=top_n, query_info=query_info)
     for c in candidates:
         c["confidence"] = matcher.compute_confidence(query_info, c)
     if not candidates:
         return {"top_match": None, "alternatives": []}
     top = candidates[0]
     return {"top_match": _format_result(top), "alternatives": [_format_result(r) for r in candidates[1:]]}
+
+
+def match_batch_preprocessed(items: list, preprocessed_map: dict, top_n: int = 10,
+                             query_info_map=None, progress_callback=None) -> list:
+    """
+    批量商品匹配（使用已预处理名称 + 可选预计算 query_info 缓存）。
+
+    Args:
+        items: [{"index": 0, "raw_name": "xxx"}, ...]
+        preprocessed_map: {item_index: preprocessed_name}
+        top_n: 返回结果数量
+        query_info_map: {item_index: query_info_dict}，预处理阶段缓存的归一化结果，避免重复计算
+        progress_callback: 可选回调，每处理一条调用 callback(current, total)
+    """
+    results = []
+    total = len(items)
+    for item in items:
+        raw = item.get("raw_name", "")
+        idx = item.get("index", 0)
+        preprocessed_name = preprocessed_map.get(idx, "")
+        query = preprocessed_name if preprocessed_name else raw
+        query_info = (query_info_map or {}).get(idx)
+
+        if progress_callback:
+            progress_callback(idx + 1, total)
+
+        if not query.strip():
+            results.append({
+                "index": idx,
+                "raw_name": raw,
+                "top_match": None,
+                "alternatives": [],
+            })
+            continue
+
+        match_res = match_single_preprocessed(query, top_n=top_n, query_info=query_info)
+        results.append({
+            "index": idx,
+            "raw_name": raw,
+            "top_match": match_res["top_match"],
+            "alternatives": match_res["alternatives"],
+        })
+    return results
+
+
 def match_batch(items: list, top_n: int = 10) -> list:
     """
     批量商品匹配。

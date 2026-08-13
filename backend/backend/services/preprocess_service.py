@@ -4,7 +4,7 @@ import os
 import sys
 import re
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -84,20 +84,29 @@ def detect_special_customer(customer_name: str) -> Optional[Dict[str, str]]:
     return None
 
 
-def preprocess_items(items: List[Dict[str, Any]], is_special: bool, brands_sorted: List[str]) -> List[Dict[str, Any]]:
+def preprocess_items(items: List[Dict[str, Any]], is_special: bool, brands_sorted: List[str]) -> Tuple[List[Dict[str, Any]], Dict[int, Dict]]:
     """
     批量预处理商品名称。
-    items: [{index, raw_name, ...}, ...]
-    is_special: 是否使用特殊客户预处理
-    brands_sorted: 按长度降序排列的品牌列表
+
+    Args:
+        items: [{index, raw_name, ...}, ...]
+        is_special: 是否使用特殊客户预处理
+        brands_sorted: 按长度降序排列的品牌列表
+
+    Returns:
+        (preprocessed_items, query_info_map)
+        - preprocessed_items: 含 preprocessed_name 的 item 列表
+        - query_info_map: {item_index: query_info_dict}，普通模式缓存归一化结果，供匹配阶段复用
     """
     if not is_special:
         # 确保普通标准化器已初始化
         _init_instances(brands_sorted)
 
     results = []
+    query_info_map = {}
     for item in items:
         raw = str(item.get('raw_name') or '').strip()
+        idx = item.get('index', 0)
         if not raw:
             results.append({**item, 'preprocessed_name': '', 'preprocess_method': 'special' if is_special else 'normal'})
             continue
@@ -105,11 +114,13 @@ def preprocess_items(items: List[Dict[str, Any]], is_special: bool, brands_sorte
         if is_special:
             preprocessed = _special_preprocess(raw)
             method = 'special'
+            query_info_map[idx] = None  # 特殊处理无标准化 query_info，下游用 None 判断会重新计算
         else:
             info = _normal_process_single(raw, brands_sorted=brands_sorted)
             preprocessed = info.get('normalized_name') or raw
             method = 'normal'
+            query_info_map[idx] = info  # 缓存完整 query_info，匹配阶段直接复用
 
         results.append({**item, 'preprocessed_name': preprocessed, 'preprocess_method': method})
 
-    return results
+    return results, query_info_map

@@ -3964,14 +3964,36 @@
       form.append('top_n', '10');
 
       try {
-        setUploadLoading(true, '正在上传并识别客户报价单…', '上传完成后将自动对品并勾选报价品类');
+        setUploadLoading(true, '正在上传文件…', '');
         const res = await fetch(API_BASE_URL + '/api/preprocess_match', {
           method: 'POST',
           body: form
         });
-        const data = await res.json();
+        const submit = await res.json();
         if (!res.ok) {
-          throw new Error(data.detail || ('上传失败：' + res.status));
+          throw new Error(submit.detail || ('上传失败：' + res.status));
+        }
+        const taskId = submit.task_id;
+
+        // 后端异步匹配：轮询进度，避免大批量超时
+        let data = null;
+        for (;;) {
+          const pr = await fetch(API_BASE_URL + '/api/preprocess_match/' + taskId + '/progress');
+          const p = await pr.json();
+          if (!pr.ok) {
+            throw new Error(p.detail || ('查询进度失败：' + pr.status));
+          }
+          if (p.status === 'error') {
+            throw new Error(p.error || '处理失败');
+          }
+          if (p.status === 'done') {
+            data = p;
+            break;
+          }
+          const doneN = p.progress || 0;
+          const totalN = p.total || 0;
+          setUploadLoading(true, '正在识别并对品，请稍候…', totalN > 0 ? ('已处理 ' + doneN + '/' + totalN + ' 条商品') : '正在处理…');
+          await new Promise((r) => setTimeout(r, 1000));
         }
 
         setUploadLoading(true, '正在解析匹配结果并写入明细…', '即将完成');
