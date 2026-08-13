@@ -781,36 +781,6 @@
     .import-match-candidate-table td.score { font-weight: 700; color: var(--dms-primary-active); }
     .import-match-candidate-table td.conf-cell { text-align: center; }
 
-    /* product_match 集成：改动说明悬浮面板 */
-    .pm-note-panel {
-      position: fixed;
-      right: 16px;
-      bottom: 72px;
-      z-index: 1000;
-      width: 280px;
-      background: #fff;
-      border: 1px solid var(--dms-border);
-      border-radius: var(--dms-radius);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      font-size: 12px;
-      line-height: 1.6;
-      overflow: hidden;
-    }
-    .pm-note-panel.collapsed .pm-note-body { display: none; }
-    .pm-note-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      background: var(--dms-primary-bg);
-      color: var(--dms-primary-active);
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .pm-note-body { padding: 10px 12px; color: var(--dms-text); }
-    .pm-note-body ul { margin: 6px 0 0 16px; padding: 0; }
-    .pm-note-body li { margin-bottom: 4px; }
-
     .actions-row {
       display: flex;
       align-items: center;
@@ -5477,22 +5447,6 @@
     renderDetailRows();
     applyReadonly();
   </script>
-
-  <div class="pm-note-panel" id="pmNotePanel">
-    <div class="pm-note-head" onclick="document.getElementById('pmNotePanel').classList.toggle('collapsed')">
-      <span>product_match 集成改动说明</span>
-      <span id="pmNoteToggle">▼</span>
-    </div>
-    <div class="pm-note-body">
-      本页为 PLUS 报价申请详情页的产品化改造原型，主要改动点：
-      <ul>
-        <li>「匹配相似度」列新增<b>匹配置信度</b>标签（高/中/低）。</li>
-        <li>「调整标准产品匹配」弹窗升级为 Top10 候选表，展示综合得分、置信度、分项维度，并支持「重新匹配」。</li>
-        <li>命中特殊客户（如香格里拉）时，明细区顶部出现<b>特殊订单预处理</b>提示条。</li>
-        <li>匹配引擎由 Dice 二元组替换为 BM25 + 2-gram 二路召回 + 规格/属性/品牌加权重排。</li>
-      </ul>
-    </div>
-  </div>
 </body>
 </html>
 
