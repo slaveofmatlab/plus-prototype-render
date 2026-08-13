@@ -206,6 +206,25 @@ class ProductMatcher:
             else:
                 self.core_name_list.append(str(val).strip())
 
+        # 预提取 _format_result 需要的列，避免热路径上做 DataFrame 全表扫描
+        def _safe_str(series, default=''):
+            """将 DataFrame 列转为 Python list[str]，避免 pandas dtype 开销"""
+            result = []
+            for val in series:
+                if pd.isna(val) or val is None:
+                    result.append(default)
+                else:
+                    result.append(str(val).strip())
+            return result
+
+        self.product_code_list = _safe_str(self.df['标准产品编码'])
+        self.product_name_list = _safe_str(self.df['标准产品名称'])
+        self.cat1_list = _safe_str(self.df.get('一级分类', pd.Series(dtype=object)))
+        self.unit_list = _safe_str(self.df.get('基本单位', pd.Series(dtype=object)))
+        self.is_yihai_list = _safe_str(self.df.get('是否益海', pd.Series(dtype=object)))
+        self.brand_full_list = _safe_str(self.df.get('品牌', pd.Series(dtype=object)))
+        self.spec_full_list = _safe_str(self.df.get('规格', pd.Series(dtype=object)))
+
         # 构建 BM25 索引 (基于 core_tokens)
         self.bm25 = BM25Index(self.core_tokens_list)
 
@@ -334,19 +353,26 @@ class ProductMatcher:
 
         ranked.sort(key=lambda x: -x[1])
 
-        # Step 5: 构建返回结果
+        # Step 5: 构建返回结果（全部用预提取的 list，不走 pandas iloc）
         results = []
         for rank, (doc_id, score) in enumerate(ranked[:top_n], 1):
-            row = self.df.iloc[doc_id]
             results.append({
                 'rank': rank,
                 'score': round(score, 4),
-                '标准产品名称': row.get('标准产品名称', ''),
-                '标准产品编码': row.get('标准产品编码', ''),
+                '标准产品名称': self.product_name_list[doc_id],
+                '标准产品编码': self.product_code_list[doc_id],
                 'detected_brand': self.brand_list[doc_id],
                 'normalized_spec': self.spec_list[doc_id],
                 'core_name': self.core_name_list[doc_id],
                 'attributes': self.attributes_list[doc_id],
+                # _format_result 需要的额外字段
+                'product_code': self.product_code_list[doc_id],
+                'product_name': self.product_name_list[doc_id],
+                '_cat1': self.cat1_list[doc_id],
+                '_unit': self.unit_list[doc_id],
+                '_is_yihai': self.is_yihai_list[doc_id],
+                '_brand_full': self.brand_full_list[doc_id],
+                '_spec_full': self.spec_full_list[doc_id],
             })
 
         return results

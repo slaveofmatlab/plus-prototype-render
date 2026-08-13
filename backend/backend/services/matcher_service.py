@@ -144,23 +144,10 @@ def match_batch(items: list, top_n: int = 10) -> list:
 
 
 def _format_result(r: dict) -> dict:
-    """格式化单条匹配结果，同时带出主数据字段供前端渲染。"""
-    matcher = get_matcher()
+    """格式化单条匹配结果（字段已由 matcher 预提取，O(1) 读取，不走 DataFrame 扫描）。"""
     product_code = str(r.get("标准产品编码", "") or r.get("product_code", ""))
     product_name = str(r.get("标准产品名称", "") or r.get("product_name", ""))
-    # 从商品库主数据补充品类、单位、是否益海等字段
-    extra = {}
-    if matcher and product_code and hasattr(matcher, "df"):
-        rows = matcher.df[matcher.df["标准产品编码"].astype(str).str.strip() == product_code]
-        if not rows.empty:
-            row = rows.iloc[0]
-            extra = {
-                "cat1": str(row.get("一级分类", "")),
-                "unit": str(row.get("基本单位", "")),
-                "is_yihai": str(row.get("是否益海", "")),
-                "brand": str(row.get("品牌", "")),
-                "spec": str(row.get("规格", "")),
-            }
+
     return {
         "product_code": product_code,
         "product_name": product_name,
@@ -170,9 +157,9 @@ def _format_result(r: dict) -> dict:
         "normalized_spec": str(r.get("normalized_spec", "")),
         "core_name": str(r.get("core_name", "")),
         "attributes": r.get("attributes", []),
-        "cat1": extra.get("cat1", ""),
-        "unit": extra.get("unit", ""),
-        "is_yihai": extra.get("is_yihai", ""),
-        "brand": extra.get("brand", ""),
-        "spec": extra.get("spec", ""),
+        "cat1": str(r.get("_cat1", "")),
+        "unit": str(r.get("_unit", "")),
+        "is_yihai": str(r.get("_is_yihai", "")),
+        "brand": str(r.get("_brand_full", "")),
+        "spec": str(r.get("_spec_full", "")),
     }

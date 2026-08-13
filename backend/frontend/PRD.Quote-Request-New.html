@@ -187,6 +187,21 @@
       font-size: 12px;
       color: var(--color-text-secondary);
     }
+    .quote-upload-progress {
+      width: 70%;
+      max-width: 260px;
+      height: 6px;
+      background: rgba(27, 118, 108, 0.12);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .quote-upload-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--color-brand-primary);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
 
     .page-title-bar {
       display: flex;
@@ -1408,6 +1423,9 @@
             <div class="quote-upload-spinner"></div>
             <div class="quote-upload-loading-text" id="quoteUploadLoadingText">正在上传并识别客户报价单…</div>
             <div class="quote-upload-loading-sub" id="quoteUploadLoadingSub">上传完成后将自动对品并勾选报价品类</div>
+            <div class="quote-upload-progress" id="quoteUploadProgress" style="display:none;">
+              <div class="quote-upload-progress-bar" id="quoteUploadProgressBar"></div>
+            </div>
           </div>
         </div>
         <input type="file" id="importFile" class="hidden-file" accept=".xlsx,.xls,.csv" onchange="onImportFile(this)" />
@@ -3947,6 +3965,14 @@
       if (area) area.classList.toggle('uploading', !!show);
       if (loadingText && text) loadingText.textContent = text;
       if (loadingSub && sub) loadingSub.textContent = sub;
+      if (!show) setUploadProgress(-1);
+    }
+
+    function setUploadProgress(percent) {
+      const wrap = $('quoteUploadProgress');
+      const bar = $('quoteUploadProgressBar');
+      if (wrap) wrap.style.display = (percent >= 0 && percent <= 100) ? 'block' : 'none';
+      if (bar && percent >= 0) bar.style.width = Math.max(0, Math.min(100, percent)) + '%';
     }
 
     async function onImportFile(input) {
@@ -3992,8 +4018,10 @@
           }
           const doneN = p.progress || 0;
           const totalN = p.total || 0;
-          setUploadLoading(true, '正在识别并对品，请稍候…', totalN > 0 ? ('已处理 ' + doneN + '/' + totalN + ' 条商品') : '正在处理…');
-          await new Promise((r) => setTimeout(r, 1000));
+          const pct = totalN > 0 ? Math.round(doneN / totalN * 100) : 0;
+          setUploadLoading(true, '正在识别并对品，请稍候…', totalN > 0 ? ('已处理 ' + doneN + '/' + totalN + ' 条（' + pct + '%）') : '正在处理…');
+          setUploadProgress(pct);
+          await new Promise((r) => setTimeout(r, 1500));
         }
 
         setUploadLoading(true, '正在解析匹配结果并写入明细…', '即将完成');
