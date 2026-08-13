@@ -9,8 +9,8 @@ from pydantic import BaseModel
 
 from backend.config import UPLOAD_DIR
 from backend.state import create_task
-from backend.services.file_parser import parse_excel
-from backend.services.preprocess_service import detect_special_customer, preprocess_items
+from backend.services.file_parser import parse_excel, detect_column_with_fallback, parse_single_sheet
+from backend.services.preprocess_service import detect_processing_mode, preprocess_items
 from backend.services.matcher_service import get_matcher, match_single_preprocessed
 from backend.services.quote_service import lookup_quotes
 from backend.services.procurement_service import lookup_procurement
@@ -29,13 +29,11 @@ class PreprocessMatchResponse(BaseModel):
     results: List[dict]
 
 
-def _extract_prefer_customers(customer_name: str, is_special: bool, special_label: Optional[str]) -> List[str]:
+def _extract_prefer_customers(customer_name: str) -> List[str]:
     """从客户名称提取报价优先匹配关键词。"""
     keywords = []
     if customer_name:
         keywords.append(customer_name.strip())
-    if is_special and special_label:
-        keywords.append(special_label.strip())
     seen = set()
     out = []
     for k in keywords:
@@ -43,6 +41,33 @@ def _extract_prefer_customers(customer_name: str, is_special: bool, special_labe
             seen.add(k)
             out.append(k)
     return out
+
+
+def _parse_with_ai_fallback(file_path: str, sheets_info: dict):
+    """规则识别不出商品列时，用 AI 兜底逐 sheet 检测并合并解析结果。"""
+    items = []
+    columns = []
+    for sheet_name in sheets_info.keys():
+        try:
+            detection = detect_column_with_fallback(file_path, sheet_name, use_ai=True)
+        except Exception as e:
+            logger.warning(f"sheet「{sheet_name}」AI 列检测异常: {e}")
+            continue
+        col = detection.get("detected_column")
+        if not col:
+            continue
+        try:
+            sheet_items = parse_single_sheet(file_path, sheet_name, col, detection.get("header_row"))
+        except Exception as e:
+            logger.warning(f"sheet「{sheet_name}」解析失败: {e}")
+            continue
+        if sheet_items:
+            if not columns:
+                columns = detection.get("columns", [])
+            for it in sheet_items:
+                it["index"] = len(items)
+                items.append(it)
+    return items, columns, sheets_info
 
 
 @router.post("/preprocess_match")
@@ -54,7 +79,7 @@ async def preprocess_match(
     """
     上传客户报价单 Excel，自动完成：
     1. 解析 Excel 商品名称
-    2. 根据 customer_name 检测是否特殊客户
+    2. 根据文件内容自动判断特殊/普通预处理（不依赖客户名称）
     3. 执行对应预处理
     4. 对预处理后名称做标准产品匹配
     5. 查询历史报价（优先匹配当前客户）与采购数据
@@ -90,13 +115,19 @@ async def preprocess_match(
         raise HTTPException(status_code=500, detail=f"文件解析失败: {str(e)}")
 
     if not items:
+        logger.info("规则未识别出商品列，尝试 AI 兜底检测...")
+        items, columns, sheets_info = _parse_with_ai_fallback(save_path, sheets_info)
+
+    if not items:
         raise HTTPException(status_code=400, detail="未从文件中识别到有效商品名称，请检查表头或选择正确的列")
 
     task.items = items
 
-    special_info = detect_special_customer(customer_name)
-    is_special = special_info is not None
-    special_label = special_info.get("label") if special_info else None
+    # 特殊/普通预处理：纯基于文件内容判断，不依赖客户名称
+    mode = detect_processing_mode(items)
+    is_special = (mode == 'special')
+    special_label = '酒店投标格式' if is_special else None
+    logger.info(f"处理模式判定: mode={mode}, is_special={is_special}")
 
     matcher = get_matcher()
     try:
@@ -105,7 +136,7 @@ async def preprocess_match(
         logger.exception("预处理失败")
         raise HTTPException(status_code=500, detail=f"预处理失败: {str(e)}")
 
-    prefer_customers = _extract_prefer_customers(customer_name, is_special, special_label)
+    prefer_customers = _extract_prefer_customers(customer_name)
     results = []
     product_codes = []
     for item in preprocessed:

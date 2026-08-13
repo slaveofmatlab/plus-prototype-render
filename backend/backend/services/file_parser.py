@@ -3,6 +3,10 @@ import pandas as pd
 import os
 from typing import List, Dict, Tuple, Optional
 
+# ExcelFile 对象缓存：避免重复打开同一文件（ZIP 解析开销大）
+_xl_cache: Dict[str, pd.ExcelFile] = {}
+_MAX_CACHE_SIZE = 5
+
 # 商品名称列的强识别关键词（按优先级）
 _NAME_KEYWORDS_STRONG = [
     # 标准叫法
@@ -10,42 +14,93 @@ _NAME_KEYWORDS_STRONG = [
     "物料名称", "品种名称", "货物名称", "物资名称",
     # 常见变体
     "物品名称", "物件名称", "货品名", "物料名", "产品名",
-    "商品", "货品", "物料", "产品", "物品",
     # 英文/混合
     "Item Name", "Product Name", "Name", "Description", "描述",
     # 其他可能
     "规格型号", "型号规格", "品牌规格",
 ]
 
+# 兜底宽松关键词（只有当强关键词全部未命中时才使用）
+_NAME_KEYWORDS_FALLBACK = ["商品", "货品", "物料", "产品", "物品"]
+
+
+def _is_suspicious(text: str) -> bool:
+    """检查文本是否可疑（非真正的列名，而是标题/元数据/合并单元格）"""
+    t = str(text)
+    if t.startswith("Unnamed"):
+        return True
+    if "tender" in t.lower() or "招标" in t or "投标" in t:
+        return True
+    if len(t) > 40:
+        return True
+    return False
+
+
+# 非商品列的排除关键词：这些列名虽然含"名称"，但实际上是客户/公司/联系人等
+_NON_PRODUCT_COLUMN_KW = ["客户", "公司", "联系人", "销售员", "供应商", "部门", "备注"]
+
+
+def _is_non_product_column(col_name: str) -> bool:
+    """判断列名是否属于非商品列（客户名、公司名等）"""
+    c = str(col_name)
+    for kw in _NON_PRODUCT_COLUMN_KW:
+        if kw in c:
+            return True
+    return False
+
 
 def _detect_name_column(df: pd.DataFrame) -> Optional[str]:
-    """自动识别商品名称列"""
+    """自动识别商品名称列（优先精确/多字关键词，兜底使用宽松单字词）"""
+
+    # 第一轮：强关键词匹配（跳过可疑列名）
     for kw in _NAME_KEYWORDS_STRONG:
         for c in df.columns:
-            if kw in str(c):
+            col_str = str(c)
+            if kw in col_str and not _is_suspicious(col_str):
                 return c
-    # 宽松回退
+    # 第二轮：兜底宽松关键词（避免误匹配"产品编号"等代码列，排除客户/公司等非商品列）
+    for kw in _NAME_KEYWORDS_FALLBACK:
+        for c in df.columns:
+            col_str = str(c)
+            if kw in col_str and "编" not in col_str and "码" not in col_str \
+                    and not _is_suspicious(col_str) and not _is_non_product_column(col_str):
+                return c
+    # 第三轮：宽松回退（排除客户/公司/销售员列）
     for c in df.columns:
-        if "名称" in str(c) or "name" in str(c).lower():
+        col_str = str(c)
+        if not _is_suspicious(col_str) and not _is_non_product_column(col_str) \
+                and ("名称" in col_str or "name" in col_str.lower()):
             return c
     return None
 
 
-def _load_sheet_auto_header(file_path: str, sheet_name: str, max_scan: int = 10) -> Optional[pd.DataFrame]:
+def _get_xl(file_path: str) -> pd.ExcelFile:
+    """获取缓存的 ExcelFile 对象，避免重复解析 ZIP"""
+    cache_key = file_path
+    if cache_key not in _xl_cache:
+        if len(_xl_cache) >= _MAX_CACHE_SIZE:
+            # 淘汰最旧的缓存
+            oldest = next(iter(_xl_cache))
+            del _xl_cache[oldest]
+        _xl_cache[cache_key] = pd.ExcelFile(file_path)
+    return _xl_cache[cache_key]
+
+
+def _load_sheet_auto_header(file_path: str, sheet_name: str, max_scan: int = 20,
+                            data_rows: Optional[int] = None) -> Optional[pd.DataFrame]:
     """
     读取指定 sheet，自动探测表头行。
-    增强版策略：
-    1. 先找出列数最多的几行作为候选表头
-    2. 从候选中选择包含商品名称关键词的行
-    3. 如果都没有关键词，选择列数最多的行
-    
+    内部复用缓存的 pd.ExcelFile 对象，避免每次读取都重新解析 ZIP。
+
     Args:
         file_path: Excel文件路径
         sheet_name: 工作表名称
-        max_scan: 最大扫描行数（默认10行）
+        max_scan: 最大扫描行数（用于探测表头位置）
+        data_rows: 读取数据行数，None=全部，0=仅列名（用于 scan_sheets 等只需列名的场景）
     """
     try:
-        raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+        xl = _get_xl(file_path)
+        raw = pd.read_excel(xl, sheet_name=sheet_name, header=None, nrows=max_scan)
     except Exception:
         return None
     if raw is None or raw.empty:
@@ -67,8 +122,12 @@ def _load_sheet_auto_header(file_path: str, sheet_name: str, max_scan: int = 10)
         if numeric_count > len(vals) * 0.5:
             continue
         
-        # 检查是否包含商品名称关键词
-        has_keyword = any(any(kw.lower() in v.lower() for kw in _NAME_KEYWORDS_STRONG) for v in vals if v)
+        # 检查是否包含商品名称关键词（跳过可疑的标题/元数据文本）
+        has_keyword = any(
+            any(kw.lower() in v.lower() for kw in _NAME_KEYWORDS_STRONG)
+            and not _is_suspicious(v)
+            for v in vals if v
+        )
         
         candidates.append((i, non_empty_count, has_keyword))
     
@@ -86,15 +145,18 @@ def _load_sheet_auto_header(file_path: str, sheet_name: str, max_scan: int = 10)
         # 如果没有任何候选，使用第一行
         best_header_row = 0
     
-    # 第三步：读取数据
-    df = pd.read_excel(file_path, sheet_name=sheet_name, header=best_header_row)
+    # 第三步：读取数据（data_rows=0 时只取列名，不加载数据行）
+    read_kwargs = {"header": best_header_row}
+    if data_rows is not None:
+        read_kwargs["nrows"] = data_rows
+    df = pd.read_excel(xl, sheet_name=sheet_name, **read_kwargs)
     df = df.dropna(how="all").reset_index(drop=True)
     return df
 
 
 def load_all_sheets(file_path: str) -> Dict[str, pd.DataFrame]:
     """读取所有非空 sheet，返回 {sheet_name: df}"""
-    xl = pd.ExcelFile(file_path)
+    xl = _get_xl(file_path)
     sheets = {}
     for sn in xl.sheet_names:
         df = _load_sheet_auto_header(file_path, sn)
@@ -254,9 +316,9 @@ def parse_excel(
         columns: 当前 sheet 的列名列表
         sheets_info: {sheet_name: [column_names]} 所有 sheet 的列信息
     """
-    # 先只获取 sheet 名称列表（快速操作）
+    # 先只获取 sheet 名称列表（复用缓存的 ExcelFile）
     try:
-        xl = pd.ExcelFile(file_path)
+        xl = _get_xl(file_path)
         all_sheet_names = xl.sheet_names
     except Exception:
         return [], [], {}
@@ -353,15 +415,149 @@ def parse_excel(
     # 移除内部使用的 _source_sheet 字段
     items = [{"index": i, "raw_name": item["raw_name"]} for i, item in enumerate(merged_items)]
 
-    # 构建 sheets_info（使用正确的表头检测获取列名）
+    # 构建 sheets_info（只需列名，不加载数据）
     sheets_info = {}
     for sn in all_sheet_names:
         try:
-            # 使用 _load_sheet_auto_header 来正确检测表头并获取列名
-            temp_df = _load_sheet_auto_header(file_path, sn)
-            if temp_df is not None and not temp_df.empty:
+            temp_df = _load_sheet_auto_header(file_path, sn, data_rows=0)
+            if temp_df is not None and len(temp_df.columns) > 0:
                 sheets_info[sn] = [str(c) for c in temp_df.columns]
         except Exception:
             pass
 
     return items, merged_columns or [], sheets_info
+
+
+def scan_sheets(file_path: str) -> Dict[str, List[str]]:
+    """
+    扫描文件的所有 sheet，返回 {sheet_name: [column_names]}。
+    不做数据提取，只用于前端展示 sheet 列表。
+    """
+    sheets_info = {}
+    try:
+        xl = _get_xl(file_path)
+    except Exception:
+        return {}
+
+    for sn in xl.sheet_names:
+        try:
+            temp_df = _load_sheet_auto_header(file_path, sn, data_rows=0)
+            if temp_df is not None and len(temp_df.columns) > 0:
+                sheets_info[sn] = [str(c) for c in temp_df.columns]
+        except Exception:
+            pass
+    return sheets_info
+
+
+def detect_column_with_fallback(
+    file_path: str, sheet_name: str, use_ai: bool = True
+) -> dict:
+    """
+    对单个 sheet 检测商品名称列：规则优先，AI 兜底。
+
+    Returns:
+        {
+            "detected_column": str | None,
+            "header_row": int | None,
+            "method": "rule" | "ai" | None,
+            "columns": [str, ...],       # 该 sheet 的所有列名
+        }
+    """
+    result = {
+        "detected_column": None,
+        "header_row": None,
+        "method": None,
+        "columns": [],
+    }
+
+    # Step 1: 加载 sheet，自动检测表头（只需列名，不加载数据）
+    df = _load_sheet_auto_header(file_path, sheet_name, data_rows=0)
+    if df is None or len(df.columns) == 0:
+        return result
+
+    columns = [str(c) for c in df.columns]
+    result["columns"] = columns
+
+    # Step 2: 规则检测
+    detected = _detect_name_column(df)
+    if detected is not None:
+        result["detected_column"] = detected
+        result["method"] = "rule"
+        return result
+
+    # Step 3: AI 兜底
+    if not use_ai:
+        return result
+
+    try:
+        from backend.services.ai_column_detector import detect_column_with_ai
+    except ImportError:
+        return result
+
+    ai_header_row, ai_column = detect_column_with_ai(file_path, sheet_name)
+    if ai_column is not None:
+        # 验证 AI 返回的列名是否在 columns 中
+        if ai_column in columns:
+            result["detected_column"] = ai_column
+            result["header_row"] = ai_header_row
+            result["method"] = "ai"
+            return result
+        # AI 返回的可能跟实际列名有细微差异，模糊匹配
+        for c in columns:
+            if ai_column in c or c in ai_column:
+                result["detected_column"] = c
+                result["header_row"] = ai_header_row
+                result["method"] = "ai"
+                return result
+
+    return result
+
+
+def parse_single_sheet(
+    file_path: str,
+    sheet_name: str,
+    column_name: str,
+    header_row: Optional[int] = None,
+) -> List[Dict]:
+    """
+    解析单个 sheet，按指定列名和表头行提取商品名。
+
+    Returns:
+        [{"index": 0, "raw_name": "..."}, ...]
+    """
+    if header_row is not None:
+        try:
+            df = pd.read_excel(_get_xl(file_path), sheet_name=sheet_name, header=header_row)
+        except Exception:
+            df = _load_sheet_auto_header(file_path, sheet_name)
+    else:
+        df = _load_sheet_auto_header(file_path, sheet_name)
+
+    if df is None or df.empty:
+        return []
+
+    # 匹配列名（精确或模糊）
+    if column_name not in df.columns:
+        matched = None
+        for c in df.columns:
+            if column_name in str(c) or str(c) in column_name:
+                matched = c
+                break
+        if matched is None:
+            return []
+        column_name = matched
+
+    df = df.dropna(how="all").reset_index(drop=True)
+    series = df[column_name]
+    if isinstance(series, pd.DataFrame):
+        series = series.iloc[:, 0]
+
+    items = []
+    for val in series.tolist():
+        if pd.isna(val) or not str(val).strip():
+            continue
+        items.append({
+            "index": len(items),
+            "raw_name": str(val).strip(),
+        })
+    return items
