@@ -78,22 +78,6 @@
       border: 1px solid rgba(0, 118, 255, 0.2);
     }
 
-    /* product_match 集成：特殊客户预处理提示条 */
-    .special-customer-banner {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      margin: 12px 0 0;
-      background: var(--color-brand-primary-subtle);
-      border: 1px solid rgba(27, 118, 108, 0.18);
-      border-radius: var(--radius-sm);
-      color: var(--color-brand-primary-active);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-    .special-customer-banner svg { flex-shrink: 0; }
-
     /* product_match 集成：第一步上传客户报价/定价/询价单 */
     .quote-upload-wrap { margin-top: 12px; }
     .quote-upload-label {
@@ -1430,12 +1414,6 @@
         </div>
         <input type="file" id="importFile" class="hidden-file" accept=".xlsx,.xls,.csv" onchange="onImportFile(this)" />
       </div>
-
-      <!-- product_match 集成：特殊客户预处理提示 -->
-      <div id="specialCustomerBanner" class="special-customer-banner">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-        <span>已启用<b id="specialCustomerName">—</b>特殊订单预处理：英文描述、类目前缀、储存类型与国家名将在匹配前自动清洗。</span>
-      </div>
       </div>
 
     <!-- 第二步：品类与明细等（顶部折叠展示第一步信息） -->
@@ -1826,49 +1804,6 @@
       c32: ['杭州-西湖项目', '杭州-钱江项目']
     };
 
-    /** product_match 集成：特殊客户预处理配置 */
-    const SPECIAL_CUSTOMER_PATTERNS = [
-      { pattern: /香格里拉|Shangri[-\s]?La/i, label: '香格里拉' }
-    ];
-
-    function getActiveSpecialCustomer() {
-      const names = selectedCustomerNames ? selectedCustomerNames() : [];
-      if (typeof isAdhocQuoteType === 'function' && isAdhocQuoteType()) {
-        const manual = (document.getElementById('customerName')?.value || '').trim();
-        if (manual) names.push(manual);
-      }
-      for (const n of names) {
-        for (const p of SPECIAL_CUSTOMER_PATTERNS) {
-          if (p.pattern.test(n)) {
-            return { name: n, label: p.label };
-          }
-        }
-      }
-      return null;
-    }
-
-    function refreshSpecialCustomerBanner() {
-      const banner = document.getElementById('specialCustomerBanner');
-      const nameEl = document.getElementById('specialCustomerName');
-      if (!banner || !nameEl) return;
-      const sp = getActiveSpecialCustomer();
-      if (sp) {
-        nameEl.textContent = sp.name || sp.label;
-        banner.style.display = 'flex';
-      } else {
-        nameEl.textContent = '—';
-        banner.style.display = 'none';
-      }
-    }
-
-    function bindSpecialCustomerBannerEvents() {
-      const inp = document.getElementById('customerName');
-      if (inp && inp.dataset.pmBannerBound !== '1') {
-        inp.dataset.pmBannerBound = '1';
-        inp.addEventListener('input', refreshSpecialCustomerBanner);
-      }
-    }
-
     let currentStep = 1;
     const detailRows = [];
     const selectedDetailRowKeys = new Set();
@@ -2127,7 +2062,6 @@
         searchInput.placeholder = selectedCustomerIds.length ? '继续搜索' : '请选择（可多选）';
       }
       if (drop && customerDropdownOpen) renderCustomerDropdown();
-      refreshSpecialCustomerBanner();
     }
 
     function renderCustomerDropdown() {
@@ -2538,7 +2472,6 @@
       renderProjectSiteMulti();
       syncCustomerChannelFieldState();
       refreshQuoteTitle(false);
-      refreshSpecialCustomerBanner();
     }
 
     function getCustomerMetaById(id) {
@@ -4128,7 +4061,7 @@
           fileWrap.style.display = 'flex';
         }
 
-        const specialHint = data.is_special ? `（已识别为${data.special_label}特殊客户，使用对应预处理规则）` : '';
+        const specialHint = data.is_special ? '（已识别为酒店投标格式，使用特殊预处理规则）' : '';
         alert(`导入完成${specialHint}：已新增 ${rows.length} 条明细，已自动勾选 ${catsToCheck.size} 个报价品类`);
       } catch (err) {
         input.value = '';
@@ -4311,11 +4244,9 @@
     initCustomerProjectDropdowns();
     bindProjectSiteMultiUI();
     bindQuoteTitleAutoSync();
-    bindSpecialCustomerBannerEvents();
     syncCustomerChannelFieldState();
     syncQuoteTypeCustomerProjectUI();
     initDefaultCustomerCascade();
-    refreshSpecialCustomerBanner();
     prevQuoteType = ($('quoteType').value || '').trim();
     syncCategoryModeMatrix();
     updateStepUI();
