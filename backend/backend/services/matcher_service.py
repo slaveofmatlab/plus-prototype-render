@@ -103,9 +103,17 @@ def _apply_ai_match_check_batch(results: list) -> None:
     valid_indices = []
     for i, r in enumerate(results):
         top = r.get("top_match")
-        if top and top.get("product_name"):
-            pairs.append((str(r.get("raw_name", "")).strip(), str(top["product_name"])))
-            valid_indices.append(i)
+        if not top or not top.get("product_name"):
+            continue
+        # 只对置信度 30%~50% 区间的匹配做 AI 复核（太低已判不匹配，太高大概率正确）
+        try:
+            conf = float(top.get("confidence", 0))
+        except (ValueError, TypeError):
+            continue
+        if conf < 0.30 or conf >= 0.50:
+            continue
+        pairs.append((str(r.get("raw_name", "")).strip(), str(top["product_name"])))
+        valid_indices.append(i)
 
     if not pairs:
         return

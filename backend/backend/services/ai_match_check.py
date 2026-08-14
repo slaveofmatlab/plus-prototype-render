@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 
-# 是否启用 AI 匹配复核（实验阶段默认关闭；需要时通过环境变量开启）
-AI_MATCH_CHECK_ENABLED = os.environ.get("AI_MATCH_CHECK_ENABLED", "0") == "1"
+# 是否启用 AI 匹配复核（默认开启；批量过大时可关闭避免拖慢）
+AI_MATCH_CHECK_ENABLED = os.environ.get("AI_MATCH_CHECK_ENABLED", "1") == "1"
 
 # 批量复核参数：每批条数、并发批数
 AI_MATCH_CHECK_BATCH_SIZE = int(os.environ.get("AI_MATCH_CHECK_BATCH_SIZE", "30"))
