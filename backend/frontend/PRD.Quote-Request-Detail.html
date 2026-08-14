@@ -1464,9 +1464,6 @@
             <tbody id="importMatchModalRadioWrap"></tbody>
           </table>
         </div>
-        <div id="importMatchLowConfHint" style="display:none;margin-top:10px;padding:8px 10px;background:#FFF1F0;border:1px solid #FFA39E;border-radius:4px;color:#CF1322;font-size:12px;">
-          当前 Top1 匹配置信度较低，建议人工核对客户产品名称、品牌、规格，或联系采购新建标准品。
-        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn" onclick="closeImportMatchModal()">取消</button>
@@ -4713,8 +4710,6 @@
       if (intro) intro.textContent = `客户产品：${row.customerProductName || '—'} · 品牌 ${row.brand || '—'} · 规格 ${row.spec || '—'}`;
       const wrap = document.getElementById('importMatchModalRadioWrap');
       if (wrap) wrap.innerHTML = buildImportMatchRadiosHtml(row.importMatchCandidates, selectedCodeFirst);
-      const lowConfHint = document.getElementById('importMatchLowConfHint');
-      if (lowConfHint) lowConfHint.style.display = (sorted[0].confidence || 0) < 0.60 ? 'block' : 'none';
       const modal = document.getElementById('importMatchModal');
       if (modal) modal.style.display = 'flex';
     }
@@ -4750,8 +4745,6 @@
       const selectedCode = String(sorted[0].code || '').trim();
       const wrap = document.getElementById('importMatchModalRadioWrap');
       if (wrap) wrap.innerHTML = buildImportMatchRadiosHtml(row.importMatchCandidates, selectedCode);
-      const lowConfHint = document.getElementById('importMatchLowConfHint');
-      if (lowConfHint) lowConfHint.style.display = (sorted[0].confidence || 0) < 0.60 ? 'block' : 'none';
     }
 
     function getProductPickerBaseList() {
