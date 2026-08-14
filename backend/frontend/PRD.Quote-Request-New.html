@@ -865,6 +865,7 @@
     .import-match-sim-col { font-size: 12px; line-height: 1.45; }
     .sort-toggle { display: inline-block; cursor: pointer; color: #999; font-size: 12px; padding: 0 3px; user-select: none; }
     .sort-toggle:hover { color: var(--color-brand-primary-active); }
+    .ai-verified-tag { display: inline-block; margin-left: 4px; padding: 0 4px; font-size: 11px; line-height: 16px; color: #1B766C; background: #E3F7F6; border: 1px solid rgba(27,118,108,0.3); border-radius: 2px; }
     .import-match-preview { padding: 2px 0; }
     .import-match-preview-title {
       display: flex;
@@ -3200,7 +3201,8 @@
             r.stdName != null && String(r.stdName).trim() !== ''
               ? String(r.stdName).trim()
               : String(top1.stdName || '');
-          stdNameCell = `<td title="当前选用的标准产品名称（可在「匹配相似度」弹窗中调整）">${escapeHtml(stdDisp)}</td>`;
+          const aiTag = r.aiVerified ? ' <span class="ai-verified-tag" title="AI 已核对确认">[AI]</span>' : '';
+          stdNameCell = `<td title="当前选用的标准产品名称（可在「匹配相似度」弹窗中调整）">${escapeHtml(stdDisp)}${aiTag}</td>`;
           const overallText = Number.isFinite(Number(top1.overall)) ? Number(top1.overall).toFixed(1) : '—';
           const topDim = '';
           simCell = `<td class="cell-wrap import-match-sim-col" title="列表展示综合相似度最高的推荐；点击可修改">
@@ -3882,7 +3884,8 @@
         isYihai: String(cand.is_yihai || '') === '是',
         brand: String(cand.brand || cand.detected_brand || ''),
         spec: String(cand.spec || cand.normalized_spec || ''),
-        hint: `综合${overall.toFixed(1)}%`
+        hint: `综合${overall.toFixed(1)}%`,
+        aiVerified: !!cand.ai_verified
       };
     }
 
@@ -4007,6 +4010,7 @@
             customerBrand: '',
             customerSpec: '',
             stdName: top ? (top.product_name || top.name || '') : '',
+            aiVerified: top ? !!top.ai_verified : false,
             cat1: top ? (top.cat1 || '') : '',
             market: null,
             lastSalesPrice: quoteFields.lastSalesPrice,

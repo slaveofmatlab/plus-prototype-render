@@ -16,7 +16,10 @@ if PREPROCESS_DIR not in sys.path:
 
 from normalizer.main import process_single_record
 
-from backend.services.ai_match_check import check_matches_batch, AI_MATCH_CHECK_ENABLED
+from backend.services.ai_match_check import (
+    check_matches_batch, AI_MATCH_CHECK_ENABLED,
+    AI_MATCH_CHECK_MIN_CONF, AI_MATCH_CHECK_MAX_CONF, AI_MATCH_CHECK_CONFIRMED_CONF,
+)
 
 _matcher_instance = None
 
@@ -79,63 +82,86 @@ def match_single_preprocessed(query_text: str, top_n: int = 10, query_info=None)
     for c in candidates:
         c["confidence"] = matcher.compute_confidence(query_info, c)
     if not candidates:
-        return {"top_match": None, "alternatives": []}
+        return {"top_match": None, "alternatives": [], "ai_candidates": []}
     # 实验：改用置信度作为排序依据
     # 原按 score 排序的逻辑在 matcher.py 的 query() 里（ranked.sort(key=lambda x: -x[1])），保留未删
     candidates.sort(key=lambda c: -float(c.get("confidence", 0)))
-    candidates = candidates[:top_n]
-    top = candidates[0]
+    top_n_candidates = candidates[:top_n]
+    ai_candidates = candidates[:20]  # 前 20 个候选，供 AI 复核使用
+    top = top_n_candidates[0]
     top_match = _format_result(top)
-    return {"top_match": top_match, "alternatives": [_format_result(r) for r in candidates[1:]]}
+    return {
+        "top_match": top_match,
+        "alternatives": [_format_result(r) for r in top_n_candidates[1:]],
+        "ai_candidates": ai_candidates,
+    }
 
 
-def _apply_ai_match_check_batch(results: list) -> None:
-    """批量 AI 兜底复核：收集「查询商品 vs 匹配标准品」配对，分批 + 并发核对后回填。
+def _apply_ai_match_check_batch(results: list, ai_candidates_list: list) -> None:
+    """批量 AI 兜底复核：对置信度 20%~60% 的匹配，核对前 20 个候选。
 
-    复核失败（无 key / 超时 / 解析失败）的位置保持规则结果不变。
+    - 找到核心产品一致的候选 → 替换 top_match，置信度设为 AI 确认值，标记 ai_verified
+    - 20 个候选都没有核心一致的 → 置空（无匹配），置信度 0
+    - 复核失败（无 key / 超时 / 解析失败）保持规则结果不变
     """
     if not AI_MATCH_CHECK_ENABLED:
         return
     if not results:
         return
 
-    pairs = []
-    valid_indices = []
+    # 收集需要核对的（置信度落在 [MIN, MAX) 区间，且有候选）
+    need_check = []
     for i, r in enumerate(results):
         top = r.get("top_match")
         if not top or not top.get("product_name"):
             continue
-        # 只对置信度 30%~50% 区间的匹配做 AI 复核（太低已判不匹配，太高大概率正确）
         try:
             conf = float(top.get("confidence", 0))
         except (ValueError, TypeError):
             continue
-        if conf < 0.30 or conf >= 0.50:
+        if not (AI_MATCH_CHECK_MIN_CONF <= conf < AI_MATCH_CHECK_MAX_CONF):
             continue
-        pairs.append((str(r.get("raw_name", "")).strip(), str(top["product_name"])))
-        valid_indices.append(i)
+        cands = ai_candidates_list[i] if i < len(ai_candidates_list) else []
+        if cands:
+            need_check.append((i, cands))
 
-    if not pairs:
+    if not need_check:
         return
 
-    check_results = check_matches_batch(pairs)
+    # 收集所有配对（每条：查询名 vs 前 20 个候选标准品名）
+    all_pairs = []
+    for i, cands in need_check:
+        raw = str(results[i].get("raw_name", "")).strip()
+        for c in cands[:20]:
+            all_pairs.append((raw, str(c.get("标准产品名称", "") or c.get("product_name", ""))))
 
-    for k, idx in enumerate(valid_indices):
-        if k >= len(check_results):
-            break
-        is_match, reason = check_results[k]
-        top = results[idx].get("top_match")
-        if not top:
-            continue
-        if is_match is False:
-            top["ai_rejected"] = True
-            top["ai_reason"] = reason
-            try:
-                top["confidence"] = round(min(float(top.get("confidence", 0)), 0.3), 2)
-            except (ValueError, TypeError):
-                top["confidence"] = 0.3
-        elif is_match is True:
-            top["ai_rejected"] = False
+    check_results = check_matches_batch(all_pairs)
+
+    # 回填
+    offset = 0
+    for i, cands in need_check:
+        n = min(len(cands), 20)
+        batch_checks = check_results[offset:offset + n]
+        offset += n
+
+        found_idx = -1
+        for j, (is_match, _reason) in enumerate(batch_checks):
+            if is_match is True:
+                found_idx = j
+                break
+
+        if found_idx >= 0:
+            # 找到核心一致的候选 → 替换 top_match
+            new_top = _format_result(cands[found_idx])
+            new_top["confidence"] = round(AI_MATCH_CHECK_CONFIRMED_CONF, 2)
+            new_top["ai_verified"] = True
+            results[i]["top_match"] = new_top
+            others = [_format_result(c) for j, c in enumerate(cands[:10]) if j != found_idx]
+            results[i]["alternatives"] = others[:9]
+        else:
+            # 20 个候选都没有核心一致的 → 置空
+            results[i]["top_match"] = None
+            results[i]["alternatives"] = []
 
 
 def match_batch_preprocessed(items: list, preprocessed_map: dict, top_n: int = 10,
@@ -151,6 +177,7 @@ def match_batch_preprocessed(items: list, preprocessed_map: dict, top_n: int = 1
         progress_callback: 可选回调，每处理一条调用 callback(current, total)
     """
     results = []
+    ai_candidates_list = []
     total = len(items)
     for item in items:
         raw = item.get("raw_name", "")
@@ -169,6 +196,7 @@ def match_batch_preprocessed(items: list, preprocessed_map: dict, top_n: int = 1
                 "top_match": None,
                 "alternatives": [],
             })
+            ai_candidates_list.append([])
             continue
 
         match_res = match_single_preprocessed(query, top_n=top_n, query_info=query_info)
@@ -178,9 +206,10 @@ def match_batch_preprocessed(items: list, preprocessed_map: dict, top_n: int = 1
             "top_match": match_res["top_match"],
             "alternatives": match_res["alternatives"],
         })
+        ai_candidates_list.append(match_res.get("ai_candidates", []))
 
     # 批量 AI 兜底复核（分批 + 并发，避免一条一调）
-    _apply_ai_match_check_batch(results)
+    _apply_ai_match_check_batch(results, ai_candidates_list)
 
     return results
 

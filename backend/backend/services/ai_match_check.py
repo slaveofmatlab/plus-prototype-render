@@ -28,6 +28,13 @@ AI_MATCH_CHECK_ENABLED = os.environ.get("AI_MATCH_CHECK_ENABLED", "1") == "1"
 AI_MATCH_CHECK_BATCH_SIZE = int(os.environ.get("AI_MATCH_CHECK_BATCH_SIZE", "30"))
 AI_MATCH_CHECK_MAX_WORKERS = int(os.environ.get("AI_MATCH_CHECK_MAX_WORKERS", "5"))
 
+# 触发 AI 复核的置信度区间（含下限，不含上限）
+AI_MATCH_CHECK_MIN_CONF = float(os.environ.get("AI_MATCH_CHECK_MIN_CONF", "0.2"))
+AI_MATCH_CHECK_MAX_CONF = float(os.environ.get("AI_MATCH_CHECK_MAX_CONF", "0.6"))
+
+# AI 确认核心产品一致后，赋予的置信度
+AI_MATCH_CHECK_CONFIRMED_CONF = float(os.environ.get("AI_MATCH_CHECK_CONFIRMED_CONF", "0.8"))
+
 
 def _parse_bool(v) -> Optional[bool]:
     if isinstance(v, bool):
@@ -112,9 +119,8 @@ def _check_one_batch(batch: List[Tuple[str, str]], key: str, model: str, timeout
     prompt = f"""你是商品对品复核专家。下面有 {len(batch)} 组「查询商品」和「匹配标准品」，请逐组判断它们是否指「同一个核心产品」。
 
 判断标准：
-- 核心品类 + 核心食材/原料必须一致才算匹配。
-- 规格/包装/品牌/容量不同但核心产品一致 → 匹配。
-- 核心产品不一致 → 不匹配（如「芒果果酱」vs「芒果」、「特级雪燕」vs「特级虾皮」）。
+- 核心产品必须「完全一样」才算匹配（不只是同类）。规格/包装/品牌/容量不同但核心产品一致 → 匹配。
+- 「芒果果酱」vs「芒果果酱」→ 匹配；「芒果果酱」vs「蓝莓果酱」→ 不匹配（同类但核心食材不同）；「芒果果酱」vs「果茸」→ 不匹配（形态/工艺不同）；「芒果果酱」vs「芒果」→ 不匹配。
 
 {chr(10).join(prompt_lines)}
 

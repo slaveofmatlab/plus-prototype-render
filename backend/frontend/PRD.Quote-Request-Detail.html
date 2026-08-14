@@ -642,6 +642,7 @@
     .import-match-sim-col { font-size: 12px; line-height: 1.2; }
     .sort-toggle { display: inline-block; cursor: pointer; color: #999; font-size: 12px; padding: 0 3px; user-select: none; }
     .sort-toggle:hover { color: var(--dms-primary-active); }
+    .ai-verified-tag { display: inline-block; margin-left: 4px; padding: 0 4px; font-size: 11px; line-height: 16px; color: #1B766C; background: #E3F7F6; border: 1px solid rgba(27,118,108,0.3); border-radius: 2px; }
     .import-match-compact {
       display: flex;
       align-items: center;
@@ -4143,7 +4144,7 @@
           simCellHtml = `<td class="import-match-sim-col" title="${escapeAttr(simTip)}">
             <div class="import-match-compact">
               <span class="import-match-overall-pct">综合${top1.overall}%</span>
-              <span class="import-match-compact-name">${escapeHtml(topStdName)}</span>
+              <span class="import-match-compact-name">${escapeHtml(topStdName)}${top1.aiVerified ? ' <span class="ai-verified-tag" title="AI 已核对确认">[AI]</span>' : ''}</span>
               ${adjustBtn}
             </div>
           </td>`;
