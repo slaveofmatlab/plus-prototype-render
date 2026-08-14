@@ -16,7 +16,7 @@ if PREPROCESS_DIR not in sys.path:
 
 from normalizer.main import process_single_record
 
-from backend.services.ai_match_check import check_match_semantics, AI_MATCH_CHECK_ENABLED, AI_MATCH_CHECK_MIN_CONF
+from backend.services.ai_match_check import check_match_semantics, AI_MATCH_CHECK_ENABLED
 
 _matcher_instance = None
 
@@ -97,12 +97,6 @@ def _apply_ai_match_check(query_text: str, top_match: dict) -> None:
     matched_name = top_match.get("product_name", "")
     if not matched_name:
         return
-    # 高置信度（≥阈值）大概率正确，跳过 AI 复核以省调用
-    try:
-        if float(top_match.get("confidence", 0)) >= AI_MATCH_CHECK_MIN_CONF:
-            return
-    except (ValueError, TypeError):
-        pass
     ai_ok, ai_reason = check_match_semantics(query_text.strip(), matched_name)
     if ai_ok is False:
         top_match["ai_rejected"] = True
