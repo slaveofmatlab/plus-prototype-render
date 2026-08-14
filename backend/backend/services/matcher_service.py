@@ -209,7 +209,7 @@ def match_batch_preprocessed(items: list, preprocessed_map: dict, top_n: int = 1
         })
         ai_candidates_list.append(match_res.get("ai_candidates", []))
 
-    # 批量 AI 兜底复核（分批 + 并发，避免一条一调）
+    # 批量 AI 兜底复核（分批 + 并发，避免一条一调；当前开关关闭，不生效）
     _apply_ai_match_check_batch(results, ai_candidates_list)
 
     return results

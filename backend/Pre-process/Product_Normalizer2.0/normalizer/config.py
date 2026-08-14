@@ -390,6 +390,42 @@ def _load_detail_words_from_excel():
 DETAIL_WORDS = _load_detail_words_from_excel()
 
 
+def _load_quality_words_from_excel():
+    """从 detail_words_dict.xlsx 加载「品质等级」分类的词（用于核心名摘除）。
+
+    只有品质等级（优级/特级/一级等）是纯修饰词，会从核心名里摘除；
+    国家名、加工方式、处理状态等有区分度，不参与核心名摘除。
+    """
+    if not os.path.exists(_DETAIL_WORDS_EXCEL):
+        return []
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(_DETAIL_WORDS_EXCEL, read_only=True)
+        ws = wb.active
+        words = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if row and len(row) >= 2:
+                category = row[0]
+                word = row[1]
+                if category and word and str(category).strip() == '品质等级':
+                    word_str = str(word).strip()
+                    if word_str:
+                        words.append(word_str)
+        wb.close()
+        if words:
+            words = sorted(set(words), key=len, reverse=True)
+            print(f"[config] 从Excel加载品质等级词库成功: {len(words)}个词条")
+            return words
+        return []
+    except Exception as e:
+        print(f"[config] 加载品质等级词库失败({e})")
+        return []
+
+
+# 品质等级词库（用于核心名摘除，最长匹配）
+QUALITY_WORDS = _load_quality_words_from_excel()
+
+
 # 品牌词库 (从Excel读取后会动态更新)
 BRAND_WORDS = []
 

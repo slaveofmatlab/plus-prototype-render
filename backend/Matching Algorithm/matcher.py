@@ -433,9 +433,9 @@ class ProductMatcher:
     #   3. 除品牌与规格外的核心名称最小编辑距离
 
     # 各维度权重（仅参与有订单信息的维度，权重自动归一化）
-    _CONF_W_BRAND = 0.3
-    _CONF_W_SPEC = 0.3
-    _CONF_W_NAME = 0.4
+    _CONF_W_BRAND = 0.25
+    _CONF_W_SPEC = 0.25
+    _CONF_W_NAME = 0.5
 
     @staticmethod
     def _edit_distance(a: str, b: str) -> int:
@@ -506,17 +506,30 @@ class ProductMatcher:
         d_units = set(re.findall(r'[a-zA-Z]+|[包瓶袋盒罐桶件支条根个片块粒双组套份杯提张把串排版板]', db_spec))
         if q_nums & d_nums:
             return 1.0 if (q_units & d_units) else 0.7
-        return 0.0
+        return 0.5  # 数值不一致：中性（规格不同可能只是包装差异）
 
     @classmethod
     def _name_conf_score(cls, query_core: str, db_core: str) -> float:
-        """核心名（除品牌与规格）维度得分: 1 - 归一化最小编辑距离"""
+        """核心名维度得分：字符 bigram 的 Dice 系数（0~1 相似度，与品牌/规格同量纲）"""
         q = (query_core or '').strip()
         d = (db_core or '').strip()
         if not q and not d:
             return 1.0
-        dist = cls._edit_distance(q, d)
-        return max(0.0, 1.0 - dist / max(len(q), len(d), 1))
+        if not q or not d:
+            return 0.0
+
+        def _bigrams(s):
+            return {s[i:i + 2] for i in range(len(s) - 1)}
+
+        bq = _bigrams(q)
+        bd = _bigrams(d)
+        # 单字（无 bigram）情况
+        if not bq and not bd:
+            return 1.0 if q == d else 0.0
+        if not bq or not bd:
+            return 0.0
+        inter = len(bq & bd)
+        return round(2.0 * inter / (len(bq) + len(bd)), 4)
 
     @classmethod
     def compute_confidence(cls, query_info: Dict[str, Any], candidate: Dict[str, Any]) -> float:
@@ -538,10 +551,11 @@ class ProductMatcher:
         total_w = 0.0
         total_s = 0.0
 
-        # 维度 1: 品牌（始终参与评分）
-        total_w += cls._CONF_W_BRAND
-        total_s += cls._CONF_W_BRAND * cls._brand_conf_score(
-            q_brand, (candidate.get('detected_brand') or '').strip())
+        # 维度 1: 品牌（仅当订单或候选有品牌时参与；双方都无品牌则不参与评分）
+        db_brand = (candidate.get('detected_brand') or '').strip()
+        if q_brand or db_brand:
+            total_w += cls._CONF_W_BRAND
+            total_s += cls._CONF_W_BRAND * cls._brand_conf_score(q_brand, db_brand)
 
         # 维度 2: 规格（仅订单有规格时参与）
         if q_spec:

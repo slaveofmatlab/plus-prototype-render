@@ -323,6 +323,7 @@ def _load_brand_document(brand_path: str) -> List[str]:
 #       首数字属于规格(如 2.5*6袋 表示每袋2.5×6袋)，需作为整体识别。
 _SPEC_PATTERN = re.compile(
     r'\d+(?:\.\d+)?\s*[\*xX×]\s*\d+(?:\.\d+)?\s*[包瓶袋盒罐桶件支条根个片块粒双组套份杯提张把串排版板箱]'
+    r'|\d+(?:\.\d+)?(?:g|mL|kg|ml|L|cm|mm|dm|m)\s*[\*xX×]\s*\d+(?:\.\d+)?'
     r'|\d+(?:\.\d+)?(?:g|mL|kg|ml|L|cm|mm|dm|m)'
     r'|\d+(?:\.\d+)?[包瓶袋盒罐桶件支条根个片块粒双组套份杯提张把串排版板]'
 )
@@ -389,6 +390,10 @@ def _remove_spec_from_normalized(normalized_name: str) -> str:
         text = text.replace(term, '')
     # 清理残余符号和空格
     text = re.sub(r'[\*xX×/／\-]+', '', text)
+    # 去掉品质等级属性词（优级/特级/一级等），保留真正的核心产品名
+    if config.QUALITY_WORDS:
+        for word in config.QUALITY_WORDS:  # 已按长度降序，先去掉长的避免重叠误删
+            text = text.replace(word, '')
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
