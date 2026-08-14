@@ -16,6 +16,8 @@ if PREPROCESS_DIR not in sys.path:
 
 from normalizer.main import process_single_record
 
+from backend.services.ai_match_check import check_match_semantics, AI_MATCH_CHECK_ENABLED, AI_MATCH_CHECK_MIN_CONF
+
 _matcher_instance = None
 
 
@@ -78,7 +80,40 @@ def match_single_preprocessed(query_text: str, top_n: int = 10, query_info=None)
     if not candidates:
         return {"top_match": None, "alternatives": []}
     top = candidates[0]
-    return {"top_match": _format_result(top), "alternatives": [_format_result(r) for r in candidates[1:]]}
+    top_match = _format_result(top)
+    _apply_ai_match_check(query_text, top_match)
+    return {"top_match": top_match, "alternatives": [_format_result(r) for r in candidates[1:]]}
+
+
+def _apply_ai_match_check(query_text: str, top_match: dict) -> None:
+    """AI 兜底复核：判断 top_match 与查询商品是否同一核心产品。
+
+    复核失败（无 key / 超时 / 解析失败）时静默跳过，保持规则结果不变。
+    """
+    if not AI_MATCH_CHECK_ENABLED:
+        return
+    if not top_match:
+        return
+    matched_name = top_match.get("product_name", "")
+    if not matched_name:
+        return
+    # 高置信度（≥阈值）大概率正确，跳过 AI 复核以省调用
+    try:
+        if float(top_match.get("confidence", 0)) >= AI_MATCH_CHECK_MIN_CONF:
+            return
+    except (ValueError, TypeError):
+        pass
+    ai_ok, ai_reason = check_match_semantics(query_text.strip(), matched_name)
+    if ai_ok is False:
+        top_match["ai_rejected"] = True
+        top_match["ai_reason"] = ai_reason
+        # 压低置信度，让前端能识别为「AI 复核未通过」
+        try:
+            top_match["confidence"] = round(min(float(top_match.get("confidence", 0)), 0.3), 2)
+        except (ValueError, TypeError):
+            top_match["confidence"] = 0.3
+    elif ai_ok is True:
+        top_match["ai_rejected"] = False
 
 
 def match_batch_preprocessed(items: list, preprocessed_map: dict, top_n: int = 10,
