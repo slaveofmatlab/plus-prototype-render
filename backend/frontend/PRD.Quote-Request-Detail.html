@@ -741,21 +741,6 @@
     .conf-low  { color: #CF1322; background: #FFF1F0; border: 1px solid #FFA39E; }
     .conf-none { color: #595959; background: #F5F5F5; border: 1px solid #D9D9D9; }
 
-    /* product_match 集成：特殊客户预处理提示条 */
-    .special-customer-banner {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      margin-bottom: 12px;
-      background: var(--dms-primary-bg);
-      border: 1px solid rgba(27, 118, 108, 0.18);
-      border-radius: var(--dms-radius);
-      color: var(--dms-primary-active);
-      font-size: 12px;
-    }
-    .special-customer-banner svg { flex-shrink: 0; }
-
     /* product_match 集成：候选列表增强 */
     .import-match-candidate-table {
       width: 100%;
@@ -1306,10 +1291,6 @@
       </div>
     </div>
     <div class="form-section-content">
-      <div id="specialCustomerBanner" class="special-customer-banner" style="display:none;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-        <span>已启用<b id="specialCustomerName">—</b>特殊订单预处理：英文描述、类目前缀、储存类型与国家名将在匹配前自动清洗。</span>
-      </div>
       <div class="detail-table-toolbar">
         <div class="table-actions">
           <button type="button" class="btn btn-primary" id="btnAddProduct" onclick="openProductPicker()"><span class="btn-ico">+</span> 从产品库选择</button>
@@ -1478,8 +1459,6 @@
                 <th style="width:80px;">标准品牌</th>
                 <th style="width:90px;">标准规格</th>
                 <th style="width:70px;text-align:center;">综合分</th>
-                <th style="width:70px;text-align:center;">置信度</th>
-                <th style="width:160px;">分项得分</th>
               </tr>
             </thead>
             <tbody id="importMatchModalRadioWrap"></tbody>
@@ -1855,7 +1834,7 @@
     function syncCategoryModeMatrix() {
       const selected = getSelectedCategories();
       selected.forEach((cat) => {
-        if (!categoryModeState[cat]) categoryModeState[cat] = { mode: '', refCustomer: '', refWebsite: '' };
+        if (!categoryModeState[cat]) categoryModeState[cat] = { mode: '采购价格(有效且最低)', refCustomer: '', refWebsite: '' };
       });
       Object.keys(categoryModeState).forEach((k) => {
         if (!selected.includes(k)) delete categoryModeState[k];
@@ -2207,49 +2186,6 @@
       c32: ['杭州-西湖项目', '杭州-钱江项目']
     };
 
-    /** product_match 集成：特殊客户预处理配置 */
-    const SPECIAL_CUSTOMER_PATTERNS = [
-      { pattern: /香格里拉|Shangri[-\s]?La/i, label: '香格里拉' }
-    ];
-
-    function getActiveSpecialCustomer() {
-      const names = selectedCustomerNames ? selectedCustomerNames() : [];
-      if (typeof isAdhocQuoteType === 'function' && isAdhocQuoteType()) {
-        const manual = (document.getElementById('customerName')?.value || '').trim();
-        if (manual) names.push(manual);
-      }
-      for (const n of names) {
-        for (const p of SPECIAL_CUSTOMER_PATTERNS) {
-          if (p.pattern.test(n)) {
-            return { name: n, label: p.label };
-          }
-        }
-      }
-      return null;
-    }
-
-    function refreshSpecialCustomerBanner() {
-      const banner = document.getElementById('specialCustomerBanner');
-      const nameEl = document.getElementById('specialCustomerName');
-      if (!banner || !nameEl) return;
-      const sp = getActiveSpecialCustomer();
-      if (sp) {
-        nameEl.textContent = sp.name || sp.label;
-        banner.style.display = 'flex';
-      } else {
-        nameEl.textContent = '—';
-        banner.style.display = 'none';
-      }
-    }
-
-    function bindSpecialCustomerBannerEvents() {
-      const inp = document.getElementById('customerName');
-      if (inp && inp.dataset.pmBannerBound !== '1') {
-        inp.dataset.pmBannerBound = '1';
-        inp.addEventListener('input', refreshSpecialCustomerBanner);
-      }
-    }
-
     /** 原型：当前登录用户 ID；上线后与登录态一致 */
     const MOCK_LOGIN_USER_ID = 'login_u1';
     /** 原型：采购/销售人员下拉；上线后由人员主数据/权限接口加载 */
@@ -2367,7 +2303,6 @@
         searchInput.placeholder = selectedCustomerIds.length ? '继续搜索' : '请选择（可多选）';
       }
       if (drop && customerDropdownOpen) renderCustomerDropdown();
-      refreshSpecialCustomerBanner();
     }
 
     function renderCustomerDropdown() {
@@ -2815,7 +2750,6 @@
       syncCustomerChannelFieldState();
       renderCustomerMulti();
       applyReadonly();
-      refreshSpecialCustomerBanner();
     }
 
     function initMock() {
@@ -3317,7 +3251,6 @@
       refreshQuoteTitle(true);
       bindQuoteTitleAutoSync();
       bindProjectSiteMultiUI();
-      bindSpecialCustomerBannerEvents();
       setVal('applyReason', seedBasic.applyReason);
       setVal('remark', seedBasic.remark);
       setVal('createdBy', seedBasic.createdBy);
@@ -3355,7 +3288,7 @@
                 if (!String(row.matchHint || '').trim() && row.importMatchCandidates.length) {
                   const sorted = [...row.importMatchCandidates].sort((a, b) => b.overall - a.overall);
                   const first = sorted[0];
-                  row.matchHint = `综合${first.overall}%（名称${first.namePct}% 品牌${first.brandPct}% 规格${first.specPct}%）`;
+                  row.matchHint = `综合${first.overall}%`;
                 }
                 return row;
               });
@@ -3374,7 +3307,6 @@
         refreshDetailPricingDerived(r);
       });
       applyReadonly();
-      refreshSpecialCustomerBanner();
       // 说明：syncBenchmarkRowsFromDealerAndCustomerType 内会同步明细毛利区间/采购基准价模式；原型对子表空模式及明细无匹配行补默认枚举便于保存演示；采购/销售人员在无 URL 参数 id 时演示「新建」——销售默认当前登录人、采购请手动选；带 ?id=任意值 时演示「已有单」加载已存人员。
     }
 
@@ -4172,7 +4104,7 @@
         if (!String(r.matchHint || '').trim() && Array.isArray(r.importMatchCandidates) && r.importMatchCandidates.length) {
           const sorted = [...r.importMatchCandidates].sort((a, b) => b.overall - a.overall);
           const top = sorted[0];
-          r.matchHint = `综合${top.overall}%（名称${top.namePct}% 品牌${top.brandPct}% 规格${top.specPct}%）`;
+          r.matchHint = `综合${top.overall}%`;
         }
         const tr = document.createElement('tr');
         const selected = detailRowSelectedKeys.has(r._rowKey || '');
@@ -4182,19 +4114,18 @@
           const sorted = [...candList].sort((a, b) => b.overall - a.overall);
           const top1 = sorted[0];
           const topStdName = String(top1.stdName || top1.name || '—');
-          const topDim = `名称${top1.namePct}% 品牌${top1.brandPct}% 规格${top1.specPct}%`;
+          const topDim = '';
           const confClass = confidenceBadgeClass(top1.confidence);
           const confLabel = confidenceLabel(top1.confidence);
           const canAdjust = state.docStatus === '新建' || state.docStatus === '采购待确认';
           const adjustBtn = canAdjust
             ? `<button type="button" class="import-match-adjust-btn" data-row-index="${idx}">调整匹配</button>`
             : '';
-          const simTip = `推荐：${topStdName}\n综合${top1.overall}%（${topDim}）\n置信度：${confLabel}（${Math.round((top1.confidence || 0) * 100)}%）`;
+          const simTip = `推荐：${topStdName}\n综合${top1.overall}%`;
           simCellHtml = `<td class="import-match-sim-col" title="${escapeAttr(simTip)}">
             <div class="import-match-compact">
-              <span class="import-match-overall-pct">${top1.overall}%</span>
+              <span class="import-match-overall-pct">综合${top1.overall}%</span>
               <span class="import-match-compact-name">${escapeHtml(topStdName)}</span>
-              <span class="conf-badge ${confClass}">${confLabel}</span>
               ${adjustBtn}
             </div>
           </td>`;
@@ -4585,7 +4516,7 @@
           attrBonus,
           brandBonus,
           confidence,
-          hint: `综合${overall}%（名称${nameS}% 品牌${brandS}% 规格${specS}%）置信度${Math.round((confidence || 0) * 100)}%`
+          hint: `综合${overall}%`
         };
       });
       scored.sort((a, b) => b.overall - a.overall);
@@ -4662,7 +4593,7 @@
       if (!String(row.unit || '').trim()) row.unit = deriveUnitFromSpec(row.stdSpec);
       row.isYihai = !!cand.isYihai;
       row.matchConfidence = cand.confidence;
-      row.matchHint = cand.hint || `综合${cand.overall}%（名称${cand.namePct}% 品牌${cand.brandPct}% 规格${cand.specPct}%）置信度${Math.round((cand.confidence || 0) * 100)}%`;
+      row.matchHint = cand.hint || `综合${cand.overall}%`;
       row.importPending = false;
       row.matchedStdProduct = row.stdProduct ? row.stdProduct + '（系统匹配）' : '';
       if (!String(row.marketResearchPrice || '').trim()) {
@@ -4741,13 +4672,6 @@
           const selectedClass = code === sel ? ' selected' : '';
           const confClass = confidenceBadgeClass(c.confidence);
           const confLabel = confidenceLabel(c.confidence);
-          const dimParts = [];
-          if (c.bm25Pct != null) dimParts.push(`BM25 ${c.bm25Pct}%`);
-          if (c.bigramPct != null) dimParts.push(`2-gram ${c.bigramPct}%`);
-          if (c.specBonus) dimParts.push(`规格+${Math.round(c.specBonus * 100)}%`);
-          if (c.brandBonus) dimParts.push(`品牌+${Math.round(c.brandBonus * 100)}%`);
-          if (c.attrBonus) dimParts.push(`属性+${Math.round(c.attrBonus * 100)}%`);
-          const dim = dimParts.length ? dimParts.join(' · ') : `名称${c.namePct}% 品牌${c.brandPct}% 规格${c.specPct}%`;
           return `
             <tr class="import-match-radio-row${selectedClass}" data-candidate-code="${escapeAttr(code)}" onclick="selectImportMatchRow('${escapeAttr(code)}')">
               <td style="text-align:center;"><input type="radio" name="importPickModalGroup" class="import-match-radio-input-modal" value="${escapeAttr(code)}"${checked} onclick="event.stopPropagation();" /></td>
@@ -4757,8 +4681,6 @@
               <td>${escapeHtml(c.brand || '—')}</td>
               <td>${escapeHtml(c.spec || '—')}</td>
               <td class="score" style="text-align:center;">${c.overall}%</td>
-              <td class="conf-cell"><span class="conf-badge ${confClass}">${confLabel}</span></td>
-              <td style="color:var(--dms-text);">${escapeHtml(dim)}</td>
             </tr>
           `;
         })
@@ -5101,18 +5023,14 @@
 
     async function onImportProductClick() {
       if (!await importMockProductRows()) return;
-      const sp = getActiveSpecialCustomer();
-      const spHint = sp ? '（已启用特殊客户预处理）' : '';
-      alert(`导入完成：已新增 ${IMPORT_MOCK_LINES.length} 条明细${spHint}（含模板增列：标准产品代码/名称/标准单位/销售单价/终端价/协作模式）`);
+      alert(`导入完成：已新增 ${IMPORT_MOCK_LINES.length} 条明细（含模板增列：标准产品代码/名称/标准单位/销售单价/终端价/协作模式）`);
     }
 
     async function onImportFile(input) {
       if (!input || !input.files || !input.files[0]) return;
       if (!await importMockProductRows()) return;
       input.value = '';
-      const sp = getActiveSpecialCustomer();
-      const spHint = sp ? '（已启用特殊客户预处理）' : '';
-      alert(`导入完成：已新增 ${IMPORT_MOCK_LINES.length} 条明细${spHint}（含模板增列字段解析）`);
+      alert(`导入完成：已新增 ${IMPORT_MOCK_LINES.length} 条明细（含模板增列字段解析）`);
     }
 
     function removeSelectedDetailRows() {

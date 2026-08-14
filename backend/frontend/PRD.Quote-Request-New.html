@@ -2667,7 +2667,7 @@
       if (!tbody) return;
       const cats = getSelectedCategories();
       cats.forEach((cat) => {
-        if (categoryModeState[cat] == null) categoryModeState[cat] = { mode: '', refCustomer: '', refWebsite: '' };
+        if (categoryModeState[cat] == null) categoryModeState[cat] = { mode: '采购价格(有效且最低)', refCustomer: '', refWebsite: '' };
         else categoryModeState[cat] = normalizeCategoryState(cat);
       });
       Object.keys(categoryModeState).forEach((k) => {
@@ -2688,7 +2688,7 @@
       const groupName = (c) => 'pm_' + encodeURIComponent(c).replace(/%/g, '_');
 
       cats.forEach((cat) => {
-        if (categoryModeState[cat] == null) categoryModeState[cat] = { mode: '', refCustomer: '', refWebsite: '' };
+        if (categoryModeState[cat] == null) categoryModeState[cat] = { mode: '采购价格(有效且最低)', refCustomer: '', refWebsite: '' };
         let st = normalizeCategoryState(cat);
 
         const chipGroup = document.createElement('div');
@@ -3007,7 +3007,7 @@
         const brandS = diceBigramSimilarity(brand, m.brand || '');
         const specS = diceBigramSimilarity(spec, m.spec || '');
         const overall = Math.round(nameS * W_NAME + brandS * W_BRAND + specS * W_SPEC);
-        const hint = `综合${overall.toFixed(1)}%（名称${nameS.toFixed(1)}% 品牌${brandS.toFixed(1)}% 规格${specS.toFixed(1)}%）`;
+        const hint = `综合${overall.toFixed(1)}%`;
         return {
           code: m.code,
           stdName: m.stdName || m.name,
@@ -3031,9 +3031,7 @@
           const rank = idx + 1;
           const overallText = Number.isFinite(Number(c.overall)) ? Number(c.overall).toFixed(1) : '—';
           const codeText = String(c.code || '').trim() || '—';
-          const dim = c.fromBackend
-            ? ''
-            : `名称${Number.isFinite(Number(c.namePct)) ? Number(c.namePct).toFixed(1) : '—'}% 品牌${Number.isFinite(Number(c.brandPct)) ? Number(c.brandPct).toFixed(1) : '—'}% 规格${Number.isFinite(Number(c.specPct)) ? Number(c.specPct).toFixed(1) : '—'}%`;
+          const dim = '';
           return `
             <label class="import-match-radio-row">
               <input type="radio" name="importPickModalGroup" class="import-match-radio-input-modal" value="${escapeHtml(c.code)}"${checked} />
@@ -3183,9 +3181,7 @@
               : String(top1.stdName || '');
           stdNameCell = `<td title="当前选用的标准产品名称（可在「匹配相似度」弹窗中调整）">${escapeHtml(stdDisp)}</td>`;
           const overallText = Number.isFinite(Number(top1.overall)) ? Number(top1.overall).toFixed(1) : '—';
-          const topDim = top1.fromBackend
-            ? ''
-            : `名称${Number.isFinite(Number(top1.namePct)) ? Number(top1.namePct).toFixed(1) : '—'}% 品牌${Number.isFinite(Number(top1.brandPct)) ? Number(top1.brandPct).toFixed(1) : '—'}% 规格${Number.isFinite(Number(top1.specPct)) ? Number(top1.specPct).toFixed(1) : '—'}%`;
+          const topDim = '';
           simCell = `<td class="cell-wrap import-match-sim-col" title="列表展示综合相似度最高的推荐；点击可修改">
             <div class="import-match-preview">
               <div class="import-match-preview-title">
@@ -3865,7 +3861,7 @@
         isYihai: String(cand.is_yihai || '') === '是',
         brand: String(cand.brand || cand.detected_brand || ''),
         spec: String(cand.spec || cand.normalized_spec || ''),
-        hint: `综合${overall.toFixed(1)}%（置信度 ${(conf * 100).toFixed(1)}%）`
+        hint: `综合${overall.toFixed(1)}%`
       };
     }
 
@@ -4148,7 +4144,7 @@
             brand: String(r.customerBrand || r.brand || ''),
             spec: String(r.customerSpec || r.spec || ''),
             matchedStdProduct: realStdName ? `${realStdName}（系统匹配）` : '',
-            matchHint: topCand ? (topCand.hint || `综合${topCand.overall}%（名称${topCand.namePct}% 品牌${topCand.brandPct}% 规格${topCand.specPct}%）`) : buildMatchHint(r),
+            matchHint: topCand ? (topCand.hint || `综合${topCand.overall}%`) : buildMatchHint(r),
             stdProduct: realStdName,
             stdProductCode: realStdCode,
             stdBrand: String(r.brand || ''),
