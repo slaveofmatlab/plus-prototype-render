@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 
-# 是否启用 AI 匹配复核（默认开启；批量过大时可关闭避免拖慢）
-AI_MATCH_CHECK_ENABLED = os.environ.get("AI_MATCH_CHECK_ENABLED", "1") == "1"
+# 是否启用 AI 匹配复核（实验阶段默认关闭；需要时通过环境变量开启）
+AI_MATCH_CHECK_ENABLED = os.environ.get("AI_MATCH_CHECK_ENABLED", "0") == "1"
 
 # 仅对置信度低于该阈值的匹配做 AI 复核（高置信度大概率正确，跳过以省调用）
 AI_MATCH_CHECK_MIN_CONF = float(os.environ.get("AI_MATCH_CHECK_MIN_CONF", "0.7"))
