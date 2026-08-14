@@ -863,6 +863,8 @@
       max-width: 320px;
     }
     .import-match-sim-col { font-size: 12px; line-height: 1.45; }
+    .sort-toggle { display: inline-block; cursor: pointer; color: #999; font-size: 12px; padding: 0 3px; user-select: none; }
+    .sort-toggle:hover { color: var(--color-brand-primary-active); }
     .import-match-preview { padding: 2px 0; }
     .import-match-preview-title {
       display: flex;
@@ -1491,7 +1493,7 @@
               <th style="text-align:center;min-width:72px;">是否益海</th>
               <th>标准品牌</th>
               <th>标准规格</th>
-              <th style="min-width:200px;">匹配相似度</th>
+              <th style="min-width:200px;">匹配相似度 <span class="sort-toggle" onclick="sortByMatchSimilarity()" title="按匹配相似度排序">↕</span></th>
               <th>一级分类</th>
               <th style="min-width:96px;">单位</th>
               <th style="min-width:110px;">协作模式</th>
@@ -3152,6 +3154,25 @@
       if (r.selectedStdCode) return String(r.selectedStdCode);
       const c = String(r.code || '').trim();
       return c || '—';
+    }
+
+    let _matchSortDesc = false;
+    function sortByMatchSimilarity() {
+      _matchSortDesc = !_matchSortDesc;
+      const getScore = (r) => {
+        const cands = Array.isArray(r.importMatchCandidates) && r.importMatchCandidates.length ? r.importMatchCandidates : [];
+        if (!cands.length) return -1;
+        let top = cands[0];
+        for (const c of cands) {
+          if (Number(c.overall || 0) > Number(top.overall || 0)) top = c;
+        }
+        return Number(top.overall) || -1;
+      };
+      detailRows.sort((a, b) => {
+        const sa = getScore(a), sb = getScore(b);
+        return _matchSortDesc ? sb - sa : sa - sb;
+      });
+      renderDetailTable();
     }
 
     function renderDetailTable() {
