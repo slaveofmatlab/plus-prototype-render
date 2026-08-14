@@ -74,11 +74,16 @@ def match_single_preprocessed(query_text: str, top_n: int = 10, query_info=None)
     matcher = get_matcher()
     if query_info is None:
         query_info = process_single_record(query_text.strip(), brands_sorted=matcher.brands)
-    candidates = matcher.query_extended(query_text, top_n=top_n, query_info=query_info)
+    # 召回候选：先按 score 召回比 top_n 更多的候选，供后续按置信度重排（否则候选不足）
+    candidates = matcher.query_extended(query_text, top_n=max(top_n, 50), query_info=query_info)
     for c in candidates:
         c["confidence"] = matcher.compute_confidence(query_info, c)
     if not candidates:
         return {"top_match": None, "alternatives": []}
+    # 实验：改用置信度作为排序依据
+    # 原按 score 排序的逻辑在 matcher.py 的 query() 里（ranked.sort(key=lambda x: -x[1])），保留未删
+    candidates.sort(key=lambda c: -float(c.get("confidence", 0)))
+    candidates = candidates[:top_n]
     top = candidates[0]
     top_match = _format_result(top)
     return {"top_match": top_match, "alternatives": [_format_result(r) for r in candidates[1:]]}
