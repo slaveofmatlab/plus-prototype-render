@@ -192,6 +192,8 @@ def check_matches_batch(
             fut = ex.submit(_check_one_batch, batch, key, model, timeout)
             futures[fut] = offset
             offset += len(batch)
+        total_batches = len(batches)
+        done = 0
         for fut in as_completed(futures):
             off = futures[fut]
             try:
@@ -202,6 +204,9 @@ def check_matches_batch(
                 idx = off + j
                 if idx < len(results):
                     results[idx] = res
+            done += 1
+            if total_batches > 1 and (done % 5 == 0 or done == total_batches):
+                logger.info(f"AI 批量复核进度: {done}/{total_batches} 批")
 
     # 兜底：未被填写的保持 (None, '')
     return [r if r is not None else (None, "") for r in results]

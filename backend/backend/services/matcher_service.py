@@ -87,7 +87,7 @@ def match_single_preprocessed(query_text: str, top_n: int = 10, query_info=None)
     # 原按 score 排序的逻辑在 matcher.py 的 query() 里（ranked.sort(key=lambda x: -x[1])），保留未删
     candidates.sort(key=lambda c: -float(c.get("confidence", 0)))
     top_n_candidates = candidates[:top_n]
-    ai_candidates = candidates[:20]  # 前 20 个候选，供 AI 复核使用
+    ai_candidates = candidates[:5]  # 前 5 个候选，供 AI 复核使用
     top = top_n_candidates[0]
     top_match = _format_result(top)
     return {
@@ -128,11 +128,12 @@ def _apply_ai_match_check_batch(results: list, ai_candidates_list: list) -> None
     if not need_check:
         return
 
-    # 收集所有配对（每条：查询名 vs 前 20 个候选标准品名）
+    # 收集所有配对（每条：查询名 vs 前 5 个候选标准品名）
+    logger.info(f"AI 复核触发：{len(need_check)} 条，核对 top5 候选")
     all_pairs = []
     for i, cands in need_check:
         raw = str(results[i].get("raw_name", "")).strip()
-        for c in cands[:20]:
+        for c in cands[:5]:
             all_pairs.append((raw, str(c.get("标准产品名称", "") or c.get("product_name", ""))))
 
     check_results = check_matches_batch(all_pairs)
@@ -140,7 +141,7 @@ def _apply_ai_match_check_batch(results: list, ai_candidates_list: list) -> None
     # 回填
     offset = 0
     for i, cands in need_check:
-        n = min(len(cands), 20)
+        n = min(len(cands), 5)
         batch_checks = check_results[offset:offset + n]
         offset += n
 
