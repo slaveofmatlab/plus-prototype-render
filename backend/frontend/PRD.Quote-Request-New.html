@@ -78,7 +78,7 @@
       border: 1px solid rgba(0, 118, 255, 0.2);
     }
 
-    /* product_match 集成：第一步上传客户报价/定价/询价单 */
+    /* product_match 集成：第一步上传客户报价单 */
     .quote-upload-wrap { margin-top: 12px; }
     .quote-upload-label {
       font-size: 12px;
@@ -1392,15 +1392,15 @@
         </div>
       </div>
 
-      <!-- product_match 集成：第一步上传客户报价/定价/询价单 -->
+      <!-- product_match 集成：第一步上传客户报价单 -->
       <div class="quote-upload-wrap" id="quoteUploadWrap">
-        <span class="quote-upload-label">客户报价/定价/询价单</span>
+        <span class="quote-upload-label">客户报价单</span>
         <div class="quote-upload-area" id="quoteUploadArea" onclick="document.getElementById('importFile').click()"
              ondragover="event.preventDefault();this.classList.add('dragover')"
              ondragleave="this.classList.remove('dragover')"
              ondrop="event.preventDefault();this.classList.remove('dragover');var f=event.dataTransfer.files;if(f.length){document.getElementById('importFile').files=f;onImportFile(document.getElementById('importFile'));}">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <div class="quote-upload-title">点击或拖拽上传客户报价单、定价单、询价单</div>
+          <div class="quote-upload-title">点击或拖拽上传客户报价单</div>
           <div class="quote-upload-hint">支持 .xlsx / .xls / .csv，上传后将自动识别客户类型并完成预处理与对品</div>
           <div class="quote-upload-file" id="quoteUploadFile" style="display:none;">
             <span id="quoteUploadFileName"></span>
