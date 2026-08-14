@@ -433,10 +433,9 @@ class ProductMatcher:
     #   3. 除品牌与规格外的核心名称最小编辑距离
 
     # 各维度权重（仅参与有订单信息的维度，权重自动归一化）
-    # 实验阶段：只保留核心名编辑距离维度，观察效果（品牌/规格暂置 0）
-    _CONF_W_BRAND = 0.0
-    _CONF_W_SPEC = 0.0
-    _CONF_W_NAME = 1.0
+    _CONF_W_BRAND = 0.3
+    _CONF_W_SPEC = 0.3
+    _CONF_W_NAME = 0.4
 
     @staticmethod
     def _edit_distance(a: str, b: str) -> int:
