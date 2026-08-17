@@ -239,6 +239,21 @@ plus-prototype-render/
 - `detail_words_dict.xlsx`：属性/描述词库，分 10 类（品质等级、国家与地区、加工方式、处理状态等，按长度降序排列用于最长匹配）；其中「品质等级」用于核心名摘除
 - `Brand_words_document.xlsx`：品牌词库（从 Excel 加载）
 
+#### 输出字段（process_single_record）
+
+单条预处理 `process_single_record(name)` 返回以下字段；批量处理 `process_excel` 会从「标准产品名称」列后插入其中 8 列到商品库：
+
+| 字段 | 说明 | 示例 |
+|------|------|------|
+| `normalized_name` | 标准化后完整名称 | 味极鲜酱油1000mL/瓶 |
+| `tokens` | 全量分词（含品牌+规格） | ["味达美","味极鲜","酱油","1000mL","瓶"] |
+| `detected_brand` | 识别到的品牌 | 味达美 |
+| `core_name` | 去品牌去规格（并摘除品质等级词）的核心名 | 味极鲜酱油 |
+| `raw_spec` | 原始规格（保留原单位） | 1L 瓶 |
+| `normalized_spec` | 标准化规格（单位已统一） | 1000mL 瓶 |
+| `core_tokens` | 核心 tokens（无品牌无规格，BM25 召回依据） | ["味极鲜","酱油"] |
+| `attributes` | 识别到的属性词（只识别不摘除） | ["非转基因","一级"] |
+
 ### 特殊客户预处理 (酒店投标格式 XGLL)
 
 位于 `Special Orders Process/XGLL/process_orders_xgll.py`，专门处理酒店投标格式的中英双语订单描述（不限于香格里拉，凡「英文类目前缀 + 含中文 + 末尾括号含中文」的订单格式均适用）。
@@ -269,6 +284,18 @@ Step 6 - 清理空格
 ### 数据库
 
 使用 `Database/RSM_723_normalized_*.xlsx`（最新日期文件），约 32,514 条标准化产品。每条记录包含归一化后的名称、分词结果（JSON）、品牌、规格、核心名称、属性词等预处理字段。
+
+#### 标准产品库预处理（原始表 → normalized 库）
+
+匹配用的 `RSM_723_normalized_*.xlsx` **不是手工生成的**，由**同一套归一化管线对标准产品库批量处理**得到（`Pre-process/Product_Normalizer2.0/normalizer/main.py` 的 `process_excel`）：
+
+- **输入**：丰厨导出的原始商品表（如 `Database/RSM_723.xlsx`），需含商品名称列（支持 `商品名称 / 标准产品名称 / 产品名称 / 品名`；第一行是数据时自动探测第 2~6 行做表头）
+- **命令**：`cd Pre-process/Product_Normalizer2.0 && python run_normalizer.py <输入文件>`，输出到输入文件同目录，命名 `{原文件名}_normalized_{时间戳}.xlsx`
+- **跳过规则**：商品名称含「禁用」的记录不纳入处理与保存（原始表 32674 条 → 归一化后 32514 条）
+- **处理**：逐行调用 `process_single_record`（品牌检测 → 6 步标准化 → 5 步分词 → 规格分离 → 属性提取）
+- **输出列**：在原表「标准产品名称」列后插入 **8 列**：`normalized_name / tokens / detected_brand / core_name / raw_spec / normalized_spec / core_tokens / attributes`（含义见「预处理模块详解·输出字段」）
+
+匹配器启动时通过 `service.get_matcher()` 自动加载**最新日期**的 `RSM_723_normalized_*.xlsx`；词库或原始商品表更新后需重跑本步骤并重启服务生效。
 
 ### 索引构建
 
