@@ -23,11 +23,13 @@ plus-prototype-render/
     │   │   ├── quote.py           # 报价数据查询
     │   │   └── preprocess_match.py# 一体化上传→预处理→匹配→查价
     │   └── services/
-    │       ├── file_parser.py     # Excel 解析（自动识别表头与商品名称列）
+    │       ├── file_parser.py     # Excel 解析（自动识别表头行与商品名称列）
+    │       ├── ai_column_detector.py # 列识别 AI 兜底（DeepSeek，规则识别失败时）
     │       ├── matcher_service.py # 匹配算法服务封装
     │       ├── preprocess_service.py # 预处理路由（普通/特殊客户分流）
     │       ├── quote_service.py   # 历史报价索引与查询
-    │       └── procurement_service.py # 采购数据索引与查询
+    │       ├── procurement_service.py # 采购数据索引与查询
+    │       └── ai_match_check.py  # AI 匹配复核（兜底拦截错配，默认关闭）
     ├── frontend/                  # PLUS 原型 HTML 页面
     │   ├── index.html             # 入口重定向
     │   ├── PRD.Quote-Request-New.html        # 桌面端-新增报价申请（向导）
@@ -69,7 +71,7 @@ plus-prototype-render/
 │  ┌────▼────┐  ┌─────▼─────┐  ┌────▼─────────────────────────┐  │
 │  │ Excel   │  │ Matching  │  │ Pre-process                  │  │
 │  │ Parser  │  │ Algorithm │  │ ┌─ Normal (归一化)            │  │
-│  │         │  │ (BM25+    │  │ └─ Special (香格里拉预处理)   │  │
+│  │         │  │ (BM25+    │  │ └─ Special (酒店投标格式)     │  │
 │  │         │  │  Bigram)  │  │                               │  │
 │  └─────────┘  └───────────┘  └──────────────────────────────┘  │
 │                                                                 │
@@ -110,17 +112,16 @@ plus-prototype-render/
            │
      ┌─────┴─────┐
      ▼           ▼
-  普通客户     特殊客户(香格里拉)
+  普通客户     特殊客户(酒店投标格式)
      │           │
      ▼           ▼
   ┌──────────┐ ┌────────────────────────────────────┐
-  │归一化处理 │ │香格里拉专用预处理                     │
+  │归一化处理 │ │中英双语专用预处理                    │
   │6步清洗   │ │ 繁体→简体(OpenCC)                    │
-  │智能分词  │ │ 去除英文部分                          │
-  │品牌识别  │ │ 定位中文起始(124个品类关键词)          │
-  │规格提取  │ │ 去除品类前缀(最长匹配+保护逻辑)        │
-  │属性提取  │ │ 去除储存类型(干货/冰鲜/急冻/常温)      │
-  └────┬─────┘ │ 去除国家名(~200个)                   │
+  │智能分词  │ │ 提取中文部分（定位中文起始）           │
+  │品牌识别  │ │ 去除品类前缀(122个品类最长匹配+保护)   │
+  │规格提取  │ │ 去除储存类型(干货/冰鲜/急冻/常温)      │
+  └────┬─────┘ │ 去除国家名(236个)                    │
        │       │ 去除 PER PKT/BTL/BAG 等包装描述        │
        │       │ 括号内品牌加"牌"后缀                   │
        │       └────────────┬─────────────────────────┘
@@ -159,6 +160,42 @@ plus-prototype-render/
   alternatives[], quote, procurement
 ```
 
+> **查价口径**：本条链路（报价数据 / 采购数据查询）为**原型参考实现**。正式落地到 PLUS 时，价格**用 plus 系统现有逻辑自动带出即可**，不沿用本原型的两张 Excel 表；对品结果按明细行单位换算价格的口径对齐原 PRD §9.4.3.4。
+
+---
+
+## 文件解析与列识别（找列名）
+
+上传的 Excel 由 `backend/services/file_parser.py` 自动解析，核心是**自动识别表头行 + 自动识别商品名称列**；规则识别失败时，由 `ai_column_detector.py` 调用 LLM（DeepSeek）兜底。
+
+### 表头行自动识别（_load_sheet_auto_header）
+
+逐行扫描前 20 行，选出最可能是表头的行：
+
+- 跳过近空行（非空单元格 < 2 个）
+- 跳过明显是数据的行（数字单元格占比 > 50%）
+- 优先选**含商品名称关键词**且列数最多的行；没有关键词候选时，选列数最多的行；再兜底用第 1 行
+- 确定表头行后按该行读数据，并丢弃全空行
+
+### 商品名称列识别（_detect_name_column）— 三级关键词
+
+| 轮次 | 关键词（子串匹配，按列表顺序先到先得） | 排除规则 |
+|------|--------------------------------------|---------|
+| 1 · 强识别 | 商品名称、品名、产品名称、商品名、货品名称、物料名称、品种名称、货物名称、物资名称、物品名称、物件名称、货品名、物料名、产品名、Item Name、Product Name、Name、Description、描述、规格型号、型号规格、品牌规格 | 跳过可疑列名：`Unnamed` 开头 / 含"招标、投标、tender" / 长度 > 40 |
+| 2 · 宽松 | 商品、货品、物料、产品、物品 | 排除含"编/码"的代码列，以及含 客户/公司/联系人/销售员/供应商/部门/备注 的非商品列 |
+| 3 · 回退 | 任意含"名称"或"name"（不区分大小写）的列 | 同上排除可疑列与非商品列 |
+
+> `Unnamed` 前缀（pandas 对空表头/重复表头的自动命名）、标题/元数据长文本、含"招标/投标"的表头均视为**可疑列名**，跳过不参与识别。
+
+### 多 Sheet 合并
+
+- 未指定 sheet 时：自动扫描所有 sheet，**只合并能识别出商品名称列的有效 sheet**；一个都识别不出时回退用第一个 sheet
+- 多 sheet 合并按**公共列**对齐（列无交集时回退首表全部列），商品名逐行去空后合并
+
+### AI 兜底（detect_column_with_fallback）
+
+规则识别不出名称列时，若配置了环境变量 `DEEPSEEK_API_KEY`，调用 DeepSeek 逐 sheet 识别表头行 + 商品名称列（读取前 25 行转成文本表格给 LLM，返回 `header_row` + `product_column`，前端会做精确/模糊匹配校验）。无 key 或调用失败时**静默回退规则结果，不报错**。
+
 ---
 
 ## 预处理模块详解
@@ -184,7 +221,7 @@ plus-prototype-render/
 
 5步分词管线，采用贪心+动态规划+jieba 三级策略：
 
-1. **基础分词**：贪心左到右扫描，优先级：数字+单位 > 纯数字 > 品牌(首字索引加速，~100候选/6134品牌) > 规格词(完整匹配) > 中文连续 > 英文连续 > 单字符
+1. **基础分词**：贪心左到右扫描，优先级：数字+单位 > 纯数字 > 品牌(首字索引加速，~100候选/6130品牌) > 规格词(完整匹配) > 中文连续 > 英文连续 > 单字符
 2. **深度拆分**：对 ≥2字符的中文 token 用动态规划拆分，三维代价函数(残余字符数, -最大规格词长度, 词数)。DP 失败时回退 jieba
 3. **合并数字+单位**：`6000` + `g` → `6000g`
 4. **去无意义 token**：`*`, `/`, `+`, `-` 等
@@ -198,8 +235,8 @@ plus-prototype-render/
 
 #### 词库
 
-- `spec_words_dict.xlsx`：637 个规格词，17 个品类
-- `detail_words_dict.xlsx`：属性/描述词库，分 11 类（品质等级、国家与地区、加工方式、处理状态等，按长度降序排列用于最长匹配）；其中「品质等级」用于核心名摘除
+- `spec_words_dict.xlsx`：637 个规格词，16 个品类
+- `detail_words_dict.xlsx`：属性/描述词库，分 10 类（品质等级、国家与地区、加工方式、处理状态等，按长度降序排列用于最长匹配）；其中「品质等级」用于核心名摘除
 - `Brand_words_document.xlsx`：品牌词库（从 Excel 加载）
 
 ### 特殊客户预处理 (酒店投标格式 XGLL)
@@ -213,7 +250,7 @@ plus-prototype-render/
 
 Step 1 - 提取中文部分: 繁体→简体(OpenCC t2s)，定位中文起始位置
 Step 2 - 去后缀: 去除储存类型(干货)和国家(中国)
-Step 3 - 去品类: 去除"小食"前缀(124个品类最长匹配，含保护逻辑)
+Step 3 - 去品类: 去除"小食"前缀(122个品类最长匹配，含保护逻辑)
 Step 4 - 去包装: 去除 PER PKT/BTL/BAG 等
 Step 5 - 加品牌后缀: 括号内品牌加"牌" → "(黄飞红牌)"
 Step 6 - 清理空格
@@ -221,7 +258,7 @@ Step 6 - 清理空格
 结果: "香脆椒 (黄飞红牌) 308GM"
 ```
 
-内置数据：124 个品类关键词（含繁体变体）、~200 个国家名、4 种储存类型。
+内置数据：122 个品类关键词（含繁体变体）、236 个国家名、4 种储存类型。
 
 ---
 
@@ -279,6 +316,19 @@ final_score = base_score
 
 候选按**置信度**从高到低排序（原按召回重排得分 score 排序，已改为按置信度）。前端「匹配相似度」列只展示「综合分」（即置信度百分比）。
 
+### AI 兜底复核（可选，默认关闭）
+
+`backend/services/ai_match_check.py` 在规则匹配后追加一道 AI 复核，用于拦截「字面相似但核心产品完全不同」的错配（如「芒果果酱」误配到「芒果」、「特级雪燕」误配到「特级虾皮」）：
+
+- **开关**：环境变量 `AI_MATCH_CHECK_ENABLED=1` 时启用，默认 `0` 关闭；同时需配置 `DEEPSEEK_API_KEY`（无 key 时自动跳过，不报错）
+- **触发范围**：仅核对置信度落在 `[AI_MATCH_CHECK_MIN_CONF=0.2, AI_MATCH_CHECK_MAX_CONF=0.6)` 区间、且有候选的匹配；每次请求批量核对**前 5 个候选**（分批 + 并发，`BATCH_SIZE=30` / `MAX_WORKERS=5`）
+- **结果处理**：
+  - 找到核心产品一致的候选 → 替换 `top_match`，置信度置为 `AI_MATCH_CHECK_CONFIRMED_CONF=0.8` 并标记 `ai_verified`（前端该行显示 `[AI]`）
+  - 5 个候选都无核心一致 → `top_match` 置空（视为无匹配，防错配）
+  - 复核失败（无 key / 超时 / 解析失败）→ 保持规则匹配结果不变
+
+> 可调环境变量：`AI_MATCH_CHECK_ENABLED`、`DEEPSEEK_API_KEY`、`AI_MATCH_CHECK_MIN_CONF`/`AI_MATCH_CHECK_MAX_CONF`（默认 0.2/0.6）、`AI_MATCH_CHECK_CONFIRMED_CONF`（默认 0.8）、`AI_MATCH_CHECK_BATCH_SIZE`（默认 30）、`AI_MATCH_CHECK_MAX_WORKERS`（默认 5）。
+
 ---
 
 ## API 接口
@@ -301,9 +351,9 @@ final_score = base_score
 {
   "task_id": "uuid-string",
   "filename": "客户询价单.xlsx",
-  "customer_name": "香格里拉酒店",
+  "customer_name": "上海锦江餐饮有限公司",
   "is_special": true,
-  "special_label": "香格里拉",
+  "special_label": "酒店投标格式",
   "total": 25,
   "results": [
     {
@@ -363,6 +413,18 @@ final_score = base_score
 
 **响应**：返回新候选的报价和采购数据。
 
+### GET /api/preprocess_match/{task_id}/progress
+
+异步任务进度轮询（上传 `/api/preprocess_match` 后立即返回 `task_id`，前端每 1.5s 轮询本接口）。`status=done` 时返回完整 `results[]`，并附带 `is_special` / `special_label`；`status=error` 时返回 `error` 字段。
+
+### POST /api/quote_lookup
+
+按产品编码列表查询历史报价（分步模式下 `select_alternative` 之外的独立报价查询）。
+
+**请求**：`application/json` `{ "task_id": "...", "product_codes": ["P001", "P002"] }`
+
+**响应**：`{ "quotes": { product_code: quote_info_or_null } }`
+
 ### POST /api/upload
 
 文件上传（分步模式），返回解析后的商品列表或 Sheet/列选择信息。
@@ -396,6 +458,8 @@ final_score = base_score
 **Step 1 - 基础信息**：运营公司、经销商（自动带出）、报价类型（常规/临采/临客询价）、客户渠道、客户类型、客户名称（多选或临时客户手填）、项目点（多选）、报价标题（自动生成）、起止日期、客户报价单上传区。
 
 **Step 2 - 品类与基准价**：Step 1 摘要折叠、9 大品类复选框、品类×采购基准价模式矩阵（市调价格/参考现客户价格/网站价格/采购价格）、产品明细表（支持文件导入自动对品、产品选择器弹窗、手动录入）、毛利汇总。
+
+> **对品自动勾选**：客户报价单上传完成对品后，按每条结果的 `cat1` 一级分类自动勾选对应报价品类（映射：水饮类→饮料、水果类→水果、鲜水产→水产，其余同名），并对本次新勾选且未设过模式的品类默认预置采购基准价模式为「采购价格(有效且最低)」（原型用名，正式开发以 PRD 新名「采购价格」为准）。
 
 #### 报价申请详情 (PRD.Quote-Request-Detail.html)
 
@@ -482,7 +546,7 @@ final_score = base_score
 | fastapi + uvicorn | Web 框架 + ASGI 服务器 |
 | pandas + openpyxl | 数据处理 + Excel 读写 |
 | jieba | 中文分词（DP 失败时的回退方案） |
-| opencc-python-reimplemented | 繁体→简体转换（香格里拉订单预处理） |
+| opencc-python-reimplemented | 繁体→简体转换（酒店投标格式订单预处理） |
 | python-calamine | 加速 Excel 读取（可选，回退 openpyxl） |
 | pyahocorasick | 加速品牌检测（可选，回退线性扫描） |
 | xlsxwriter | 加速 Excel 写入（可选，回退 openpyxl） |

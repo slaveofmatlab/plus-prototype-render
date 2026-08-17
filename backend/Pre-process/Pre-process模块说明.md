@@ -128,8 +128,8 @@ Pre-process/Product_Normalizer2.0/
 │   ├── utils.py               # 工具函数
 │   └── test_normalizer.py     # 单元测试
 └── Spec_words/
-    ├── spec_words_dict.xlsx       # 规格词库 (637词, 17个分类)
-    ├── Brand_words_document.xlsx  # 品牌库 (6131个品牌)
+    ├── spec_words_dict.xlsx       # 规格词库 (637词, 16个分类)
+    ├── Brand_words_document.xlsx  # 品牌库 (6130个品牌)
     └── detail_words_dict.xlsx     # 属性词库 (239词, 10个分类)
 ```
 
@@ -242,7 +242,7 @@ python -m pytest normalizer/test_normalizer.py -v
 
 第 1 行为表头，从第 2 行开始读取数据。A列和B列均不能为空，否则该行不会被加载。
 
-**当前规模：** 17 个分类，共 637 词。
+**当前规模：** 16 个分类，共 637 词。
 
 **在预处理中的作用：** 用于分词阶段（tokenizer.py）的动态规划（DP）深度拆分。分词器会扫描商品名称，尝试用词库中的词条进行最长匹配，将名称拆分为有意义的 token。例如"整火腿"在词库中，所以`整火腿6000g`会被正确拆分为`["整火腿", "6000g"]`，而不是被 jieba 错误切分。
 
@@ -273,7 +273,7 @@ python -m pytest normalizer/test_normalizer.py -v
 
 第 1 行为表头，从第 2 行开始读取。空值、"无"、"nan" 会被自动跳过。
 
-**当前规模：** 6131 个品牌。
+**当前规模：** 6130 个品牌。
 
 **在预处理中的作用：** 用于预处理最先执行的品牌检测阶段（阶段0）。系统通过两种方式识别品牌：
 1. **"XX牌"模式**：商品名中出现"品牌名+牌"时直接提取（如"味达美牌"→品牌为"味达美"）
@@ -347,7 +347,7 @@ python -m pytest normalizer/test_normalizer.py -v
 
 | 优化项 | 技术 | 效果 |
 |--------|------|------|
-| 品牌检测 | Aho-Corasick 多模匹配 | 6131品牌一次扫描完成 |
+| 品牌检测 | Aho-Corasick 多模匹配 | 6130品牌一次扫描完成 |
 | 分词器品牌匹配 | 首字索引 | 候选范围缩小 60x |
 | DP词库扫描 | 首字索引 | 候选范围缩小 35x |
 | Excel读取 | python-calamine (Rust) | 读取速度 5-10x |
