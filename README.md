@@ -283,11 +283,11 @@ Step 6 - 清理空格
 
 ### 数据库
 
-使用 `Database/RSM_723_normalized_*.xlsx`（最新日期文件），约 32,514 条标准化产品。每条记录包含归一化后的名称、分词结果（JSON）、品牌、规格、核心名称、属性词等预处理字段。
+使用 `Database/处理后标品库.xlsx`，包含 32,514 条标准化产品。每条记录包含归一化后的名称、分词结果（JSON）、品牌、规格、核心名称、属性词等预处理字段。
 
 #### 标准产品库预处理（原始表 → normalized 库）
 
-匹配用的 `RSM_723_normalized_*.xlsx` **不是手工生成的**，由**同一套归一化管线对标准产品库批量处理**得到（`Pre-process/Product_Normalizer2.0/normalizer/main.py` 的 `process_excel`）：
+预处理后的商品库文件 `处理后标品库.xlsx` **不是手工生成的**，由**同一套归一化管线对标准产品库批量处理**得到（`Pre-process/Product_Normalizer2.0/normalizer/main.py` 的 `process_excel`）：
 
 - **输入**：丰厨导出的原始商品表（如 `Database/RSM_723.xlsx`），需含商品名称列（支持 `商品名称 / 标准产品名称 / 产品名称 / 品名`；第一行是数据时自动探测第 2~6 行做表头）
 - **命令**：`cd Pre-process/Product_Normalizer2.0 && python run_normalizer.py <输入文件>`，输出到输入文件同目录，命名 `{原文件名}_normalized_{时间戳}.xlsx`
@@ -295,7 +295,7 @@ Step 6 - 清理空格
 - **处理**：逐行调用 `process_single_record`（品牌检测 → 6 步标准化 → 5 步分词 → 规格分离 → 属性提取）
 - **输出列**：在原表「标准产品名称」列后插入 **8 列**：`normalized_name / tokens / detected_brand / core_name / raw_spec / normalized_spec / core_tokens / attributes`（含义见「预处理模块详解·输出字段」）
 
-匹配器启动时通过 `service.get_matcher()` 自动加载**最新日期**的 `RSM_723_normalized_*.xlsx`；词库或原始商品表更新后需重跑本步骤并重启服务生效。
+匹配器启动时通过 `service.get_matcher()` 自动加载 `Database/处理后标品库.xlsx`；词库或原始商品表更新后需重跑本步骤并重启服务生效。
 
 ### 索引构建
 
